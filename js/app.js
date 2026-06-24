@@ -4,17 +4,6 @@ let cart = {};
 let lastResults = [];
 let _authResolve = null;
 
-// ── EmailJS config ──
-// Creează cont gratuit pe https://www.emailjs.com
-// 1. Connectează un serviciu de email (Gmail etc.) → obții Service ID
-// 2. Creează un template cu variabilele {{link}} și {{location}} → obții Template ID
-// 3. Din Account → API Keys → obții Public Key
-const EMAILJS_CONFIG = {
-  publicKey: '',    // ex: 'abc123def456'
-  serviceID: '',    // ex: 'service_abc123'
-  templateID: ''    // ex: 'template_xyz789'
-};
-
 function waitForAuth() {
   if (_authResolve) return _authResolve;
   _authResolve = new Promise(function(resolve) {
@@ -152,38 +141,29 @@ window.addEventListener('storage', e => {
 
 // ── EMAIL CONFIRMATION ──
 async function handleConfirmation() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('confirm') || params.get('admin_confirm');
-  if (!token) return false;
-  if (!firebaseReady) return false;
-  const isAdminConfirm = !!params.get('admin_confirm');
-  const basePath = isAdminConfirm ? 'adminConfirmations' : 'confirmations';
-  const paramName = isAdminConfirm ? 'admin_confirm' : 'confirm';
-  try {
-    const snap = await firebase.database().ref(basePath + '/' + token).once('value');
-    const data = snap.val();
-    if (!data || (!isAdminConfirm && !data.location)) {
-      showToast('Link de confirmare invalid sau expirat!', true);
-      return false;
+  // Firebase Auth email link confirmation (for 🔑 admin access)
+  if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
+    const email = localStorage.getItem('emailForAdminConfirm');
+    if (!email) {
+      showToast('Emailul nu a fost găsit. Încearcă din nou.', true);
+      return true;
     }
-    await firebase.database().ref(basePath + '/' + token).remove();
-    const url = new URL(window.location);
-    url.searchParams.delete(paramName);
-    window.history.replaceState({}, '', url);
-    if (isAdminConfirm) {
+    try {
+      await firebase.auth().signInWithEmailLink(email, window.location.href);
+      localStorage.removeItem('emailForAdminConfirm');
       currentUser = { location: '', isAdmin: true };
       doLogin();
       showToast('✅ Acces Admin confirmat pe acest dispozitiv!');
-    } else {
-      currentUser = { location: data.location, isAdmin: false };
-      doLogin();
-      showToast('✅ Dispozitiv confirmat pentru ' + data.location + '!');
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      return true;
+    } catch (e) {
+      console.warn('Email link sign-in error:', e);
+      showToast('Eroare confirmare: ' + e.message, true);
+      return true;
     }
-    return true;
-  } catch (e) {
-    console.warn('handleConfirmation error:', e);
-    return false;
   }
+  return false;
 }
 
 // ── INIT ──
@@ -195,11 +175,6 @@ async function initApp() {
     console.warn('initApp error:', e);
   }
   updateFBStatus();
-
-  // Init EmailJS if configured
-  if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.publicKey) {
-    try { emailjs.init(EMAILJS_CONFIG.publicKey); } catch (e) { console.warn('EmailJS init error:', e); }
-  }
 
   // Check for email confirmation link FIRST
   if (await handleConfirmation()) { return; }
@@ -444,36 +419,18 @@ async function submitAdminEmail() {
   const email = inp.value.trim();
   if (!email || !email.includes('@')) { showToast('Introdu un email valid!', true); return; }
   if (!firebaseReady) { showToast('Firebase neconectat!', true); return; }
-  const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
-  const loc = currentUser ? currentUser.location : 'unknown';
+  const actionCodeSettings = {
+    url: 'https://comenzi-corina-caffe.web.app',
+    handleCodeInApp: true
+  };
   try {
-    await firebase.database().ref('adminConfirmations/' + token).set({ email, location: loc, createdAt: Date.now() });
-    const link = 'https://comenzi-corina-caffe.web.app/?admin_confirm=' + token;
+    localStorage.setItem('emailForAdminConfirm', email);
+    await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
     hideAdminPinModal();
-    // Try to send via EmailJS if configured
-    let sent = false;
-    if (EMAILJS_CONFIG.publicKey && EMAILJS_CONFIG.serviceID && EMAILJS_CONFIG.templateID) {
-      try {
-        await emailjs.send(EMAILJS_CONFIG.serviceID, EMAILJS_CONFIG.templateID, {
-          to_email: email,
-          link: link,
-          location: loc
-        });
-        sent = true;
-        showToast('✉️ Email trimis la ' + email + '. Confirmă linkul pentru acces Admin.', false, 6000);
-      } catch (e) {
-        console.warn('EmailJS error:', e);
-      }
-    }
-    if (!sent) {
-      try { await navigator.clipboard.writeText(link); showToast('Link copiat! Verifică emailul pentru confirmare.'); } catch (e) {}
-      const subject = encodeURIComponent('Confirmare acces Admin');
-      const body = encodeURIComponent('Accesează acest link pentru a confirma accesul Admin:\n\n' + link);
-      window.open('mailto:' + email + '?subject=' + subject + '&body=' + body, '_blank');
-      showToast('✉️ Email deschis. Confirmă linkul pentru acces Admin.', false, 6000);
-    }
+    showToast('✉️ Email trimis la ' + email + '. Verifică inbox-ul și deschide link-ul.', false, 8000);
   } catch (e) {
-    showToast('Eroare: ' + e.message, true);
+    localStorage.removeItem('emailForAdminConfirm');
+    showToast('Eroare trimitere email: ' + e.message, true);
   }
 }
 
@@ -544,6 +501,10 @@ async function doLogout(force) {
   lastResults = [];
   localStorage.removeItem('sess_user');
   localStorage.removeItem('sess_cart');
+  localStorage.removeItem('emailForAdminConfirm');
+  if (firebase.auth().currentUser && !firebase.auth().currentUser.isAnonymous) {
+    try { firebase.auth().signOut(); } catch (e) {}
+  }
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminTab').style.display = 'none';
