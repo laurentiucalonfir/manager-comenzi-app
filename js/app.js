@@ -401,10 +401,8 @@ async function doLogout(force) {
   if (!force && !confirm('Deconectare?')) return;
   if (!force && currentUser && currentUser.location) {
     const grants = Sync.getGrants();
-    if (grants[currentUser.location]) {
-      delete grants[currentUser.location];
-      try { await Sync.saveGrants(grants); } catch (e) {}
-    }
+    delete grants[currentUser.location];
+    try { await Sync.saveGrants(grants); } catch (e) {}
   }
   currentUser = null;
   cart = {};
