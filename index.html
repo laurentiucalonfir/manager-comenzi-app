@@ -55,7 +55,6 @@
     <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
     <div class="header-right">
       <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
-      <button class="btn-icon" id="adminKeyBtn" onclick="showAdminPinModal()" style="display:none" title="Admin">🔑</button>
       <button class="btn-icon btn-logout" id="headerLogoutBtn" onclick="doLogout()">⏏</button>
     </div>
   </div>
@@ -265,17 +264,7 @@
 
 </div>
 
-<!-- ADMIN PIN MODAL -->
-<div class="modal-overlay" id="adminPinModal" style="display:none" onclick="hideAdminPinModal()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">🔑 Acces Admin — Confirmare email</div>
-    <input class="search-input" id="adminPinEntry" type="text" inputmode="email" placeholder="Email-ul tău" autocomplete="off" style="margin-bottom:12px;text-align:center;font-size:1rem">
-    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px">Vei primi un link de confirmare pe acest email.</div>
-    <div class="row2" style="gap:8px">
-      <button class="btn-save-pins" onclick="submitAdminEmail()" style="flex:1">Trimite</button>
-      <button class="btn-logout" onclick="hideAdminPinModal()" style="flex:1;text-align:center">Anulează</button>
-    </div>
-  </div>
+
 </div>
 
 <!-- LOADING -->
@@ -307,7 +296,7 @@
 })();
 </script>
 <script>
-const APP_VER = '89';
+const APP_VER = '90';
 if ('serviceWorker' in navigator) {
   let reg = null;
 

@@ -139,33 +139,6 @@ window.addEventListener('storage', e => {
   }
 });
 
-// ── EMAIL CONFIRMATION ──
-async function handleConfirmation() {
-  // Firebase Auth email link confirmation (for 🔑 admin access)
-  if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
-    const email = localStorage.getItem('emailForAdminConfirm');
-    if (!email) {
-      showToast('Emailul nu a fost găsit. Încearcă din nou.', true);
-      return true;
-    }
-    try {
-      await firebase.auth().signInWithEmailLink(email, window.location.href);
-      localStorage.removeItem('emailForAdminConfirm');
-      currentUser = { location: '', isAdmin: true };
-      doLogin();
-      showToast('✅ Acces Admin confirmat pe acest dispozitiv!');
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
-      return true;
-    } catch (e) {
-      console.warn('Email link sign-in error:', e);
-      showToast('Eroare confirmare: ' + e.message, true);
-      return true;
-    }
-  }
-  return false;
-}
-
 // ── INIT ──
 async function initApp() {
   try {
@@ -175,9 +148,6 @@ async function initApp() {
     console.warn('initApp error:', e);
   }
   updateFBStatus();
-
-  // Check for email confirmation link FIRST
-  if (await handleConfirmation()) { return; }
 
   // Wait for grants sync from Firebase so login doesn't use stale data
   try { if (Sync.grantsSync) await Promise.race([Sync.grantsSync, new Promise(function(r) { setTimeout(r, 5000); })]); } catch (e) {}
@@ -403,40 +373,6 @@ async function pinOk() {
   setTimeout(() => { el.classList.remove('error'); updatePinDisplay(); }, 800);
 }
 
-function showAdminPinModal() {
-  document.getElementById('adminPinModal').style.display = 'flex';
-  const inp = document.getElementById('adminPinEntry');
-  inp.value = '';
-  setTimeout(function() { inp.focus(); }, 100);
-}
-
-function hideAdminPinModal() {
-  document.getElementById('adminPinModal').style.display = 'none';
-}
-
-async function submitAdminEmail() {
-  const inp = document.getElementById('adminPinEntry');
-  const email = inp.value.trim();
-  if (!email || !email.includes('@')) { showToast('Introdu un email valid!', true); return; }
-  if (!firebaseReady) { showToast('Firebase neconectat!', true); return; }
-  const actionCodeSettings = {
-    url: 'https://comenzi-corina-caffe.web.app',
-    handleCodeInApp: true
-  };
-  try {
-    localStorage.setItem('emailForAdminConfirm', email);
-    console.log('📧 sendSignInLinkToEmail to:', email, 'settings:', JSON.stringify(actionCodeSettings));
-    await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
-    console.log('📧 Email sent successfully');
-    hideAdminPinModal();
-    showToast('✉️ Email trimis la ' + email + '. Verifică inbox-ul și deschide link-ul.', false, 8000);
-  } catch (e) {
-    localStorage.removeItem('emailForAdminConfirm');
-    console.error('📧 sendSignInLinkToEmail error:', e.code, e.message);
-    showToast('Eroare trimitere email: ' + (e.message || 'necunoscută'), true);
-  }
-}
-
 document.addEventListener('keydown', e => {
   if (document.getElementById('loginScreen').style.display === 'none') return;
   var emailSection = document.getElementById('loginEmailSection');
@@ -456,10 +392,6 @@ document.getElementById('pinDisplay').addEventListener('input', function() {
   if (currentPin.length === 6) setTimeout(pinOk, 150);
 });
 
-document.getElementById('adminPinEntry').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); submitAdminEmail(); }
-});
-
 function doLogin() {
   document.getElementById('loginScreen').style.display = 'none';
   const app = document.getElementById('app');
@@ -469,8 +401,6 @@ function doLogin() {
 
   document.getElementById('headerLoc').textContent = currentUser.isAdmin ? 'Admin' : currentUser.location;
 
-  const keyBtn = document.getElementById('adminKeyBtn');
-  if (keyBtn) keyBtn.style.display = currentUser.isAdmin ? 'none' : 'inline-flex';
   const logoutBtn = document.getElementById('headerLogoutBtn');
   if (logoutBtn) logoutBtn.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
 
@@ -504,7 +434,6 @@ async function doLogout(force) {
   lastResults = [];
   localStorage.removeItem('sess_user');
   localStorage.removeItem('sess_cart');
-  localStorage.removeItem('emailForAdminConfirm');
   if (firebase.auth().currentUser && !firebase.auth().currentUser.isAnonymous) {
     try { firebase.auth().signOut(); } catch (e) {}
   }
@@ -513,8 +442,6 @@ async function doLogout(force) {
   document.getElementById('adminTab').style.display = 'none';
   document.getElementById('centralizatorTab').style.display = 'none';
   document.getElementById('adminLocRow').classList.remove('visible');
-  const keyBtn = document.getElementById('adminKeyBtn');
-  if (keyBtn) keyBtn.style.display = 'none';
   const headerLogoutBtn = document.getElementById('headerLogoutBtn');
   if (headerLogoutBtn) headerLogoutBtn.style.display = 'none';
   switchTab('order');
