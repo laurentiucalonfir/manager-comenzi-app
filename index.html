@@ -19,7 +19,7 @@
   <div class="login-sub">Sistem comenzi furnizori</div>
   <div class="login-label">Introdu PIN-ul</div>
   <input class="pin-display" id="pinDisplay" type="text" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="······" maxlength="20">
-  <div class="pin-hint">PIN Admin — Locațiile folosesc link-ul din email</div>
+  <div class="pin-hint">PIN 6 cifre</div>
   <div class="numpad">
     <button class="numpad-btn" onclick="pinPress('1')">1</button>
     <button class="numpad-btn" onclick="pinPress('2')">2</button>
@@ -268,10 +268,11 @@
 <!-- ADMIN PIN MODAL -->
 <div class="modal-overlay" id="adminPinModal" style="display:none" onclick="hideAdminPinModal()">
   <div class="modal-content" onclick="event.stopPropagation()">
-    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">🔑 Acces Admin</div>
-    <input class="search-input" id="adminPinEntry" type="text" maxlength="6" inputmode="numeric" placeholder="PIN admin" autocomplete="off" style="margin-bottom:12px;text-align:center;font-size:1.2rem;letter-spacing:8px">
+    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">🔑 Acces Admin — Confirmare email</div>
+    <input class="search-input" id="adminPinEntry" type="text" inputmode="email" placeholder="Email-ul tău" autocomplete="off" style="margin-bottom:12px;text-align:center;font-size:1rem">
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px">Vei primi un link de confirmare pe acest email.</div>
     <div class="row2" style="gap:8px">
-      <button class="btn-save-pins" onclick="submitAdminPin()" style="flex:1">Intră</button>
+      <button class="btn-save-pins" onclick="submitAdminEmail()" style="flex:1">Trimite</button>
       <button class="btn-logout" onclick="hideAdminPinModal()" style="flex:1;text-align:center">Anulează</button>
     </div>
   </div>
@@ -306,7 +307,7 @@
 })();
 </script>
 <script>
-const APP_VER = '85';
+const APP_VER = '86';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
