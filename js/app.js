@@ -13,9 +13,9 @@ function waitForAuth() {
       setTimeout(checkAuth, 100);
     }
     checkAuth();
+    // timeout 15s — dacă nu apare auth, continuă oricum
+    setTimeout(function() { resolve(null); }, 15000);
   });
-  // timeout 15s — dacă nu apare auth, continuă oricum
-  setTimeout(function() { if (_authResolve) { _authResolve = null; resolve(null); } }, 15000);
   return _authResolve;
 }
 
@@ -117,15 +117,25 @@ document.addEventListener('visibilitychange', () => {
 
 // ── STORAGE SYNC (cross-tab) ──
 window.addEventListener('storage', e => {
-  if (e.key === 'promenada_grants' && currentUser && !currentUser.isAdmin) {
-    try {
-      const grants = JSON.parse(e.newValue);
-      const g = grants[currentUser.location];
-      if (!g || !g.granted) {
-        showToast('Accesul tău a fost revocat!', true);
-        doLogout(true);
-      }
-    } catch (e) {}
+  if (e.key === 'promenada_grants') {
+    if (currentUser && !currentUser.isAdmin) {
+      try {
+        const grants = JSON.parse(e.newValue);
+        const g = grants[currentUser.location];
+        if (!g || !g.granted) {
+          showToast('Accesul tău a fost revocat!', true);
+          doLogout(true);
+        }
+      } catch (e) {}
+    }
+    if (currentUser && currentUser.isAdmin && e.newValue) {
+      try {
+        const grants = JSON.parse(e.newValue);
+        Sync._grants = grants;
+        Sync._localGrantsHash = JSON.stringify(grants);
+        adminRenderGrants();
+      } catch (e) {}
+    }
   }
 });
 
@@ -154,16 +164,34 @@ async function initApp() {
 
   // Poll grants from Firebase every 5s (catches cross-device revoke even if on() listener fails)
   setInterval(() => {
-    if (!currentUser || currentUser.isAdmin || !firebaseReady) return;
-    const sanitizedKey = Sync._sanitizeFirebaseKey(currentUser.location);
-    fbReadWithTimeout('grants/' + sanitizedKey, 10000).then(snap => {
-      const val = snap.val();
-      if (!val || !val.granted) {
-        showToast('Accesul tău a fost revocat!', true);
-        doLogout(true);
-      }
-    }).catch(() => {});
+    if (!currentUser || !firebaseReady) return;
+    if (!currentUser.isAdmin) {
+      const sanitizedKey = Sync._sanitizeFirebaseKey(currentUser.location);
+      fbReadWithTimeout('grants/' + sanitizedKey, 10000).then(snap => {
+        const val = snap.val();
+        if (!val || !val.granted) {
+          showToast('Accesul tău a fost revocat!', true);
+          doLogout(true);
+        }
+      }).catch(() => {});
+    }
   }, 5000);
+
+  // LocalStorage polling for admin (works across tabs even without Firebase or storage event)
+  setInterval(() => {
+    if (!currentUser || !currentUser.isAdmin) return;
+    try {
+      var ls = localStorage.getItem('promenada_grants');
+      if (!ls) return;
+      var localParsed = JSON.parse(ls);
+      var localStr = JSON.stringify(localParsed);
+      if (localStr !== Sync._localGrantsHash) {
+        Sync._grants = localParsed;
+        Sync._localGrantsHash = localStr;
+        adminRenderGrants();
+      }
+    } catch (e) {}
+  }, 1500);
 
   Sync.onGrantsChange((grants) => {
     if (!currentUser) return;
@@ -369,8 +397,15 @@ function doLogin() {
   saveSession();
 }
 
-function doLogout(force) {
+async function doLogout(force) {
   if (!force && !confirm('Deconectare?')) return;
+  if (!force && currentUser && currentUser.location) {
+    const grants = Sync.getGrants();
+    if (grants[currentUser.location]) {
+      grants[currentUser.location] = { granted: false, loggedOutAt: Date.now() };
+      try { await Sync.saveGrants(grants); } catch (e) {}
+    }
+  }
   currentUser = null;
   cart = {};
   lastResults = [];
@@ -735,7 +770,8 @@ function adminRenderGrants() {
     const status = granted ? '<span class="grant-status on" title="Acces activ">✓</span>' : '<span class="grant-status off" title="Fără acces">✕</span>';
     let codeDisplay = '';
     if (hasCode) codeDisplay = `<span class="grant-code">Cod: <strong>${g.code}</strong></span>`;
-    row.innerHTML = `${status}<span class="grant-loc">${escHtml(loc)}</span>
+    const loggedOutStr = g && g.loggedOutAt ? '<span class="grant-logged-out">(s-a delogat)</span>' : '';
+    row.innerHTML = `${status}<span class="grant-loc">${escHtml(loc)}</span>${loggedOutStr}
       <input class="grant-pin" type="text" maxlength="6" inputmode="numeric" value="${currentPin}" data-loc="${loc}" onchange="adminSetPin(this)" placeholder="PIN">
       ${codeDisplay}<span style="flex:1"></span>`;
     if (granted) {
@@ -1401,7 +1437,7 @@ function switchTab(tab) {
   const tabEl = document.querySelector(`[data-tab="${tab}"]`);
   if (tabEl) tabEl.classList.add('active');
   if (tab === 'cart') renderCart();
-  if (tab === 'admin') { adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
+  if (tab === 'admin') { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
   if (tab === 'results') renderResults(lastResults);
   if (tab === 'centralizator') renderCentralizator();
   if (tab === 'history') renderHistory();

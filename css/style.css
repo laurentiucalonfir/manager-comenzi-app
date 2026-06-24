@@ -30,6 +30,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .grant-status.on{color:var(--green);}
 .grant-status.off{color:var(--text-muted);}
 .grant-loc{font-size:0.85rem;font-weight:600;min-width:80px;}
+.grant-logged-out{font-size:0.68rem;color:var(--accent);font-weight:600;white-space:nowrap;}
 .grant-pin{width:48px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 6px;font-size:0.9rem;font-weight:700;text-align:center;color:var(--text);outline:none;font-family:monospace;}
 .grant-pin:focus{border-color:var(--green);}
 .grant-code{font-size:0.78rem;color:var(--text-muted);}
