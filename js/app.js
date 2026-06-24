@@ -373,6 +373,35 @@ async function pinOk() {
   setTimeout(() => { el.classList.remove('error'); updatePinDisplay(); }, 800);
 }
 
+function showAdminPinModal() {
+  document.getElementById('adminPinModal').style.display = 'flex';
+  const inp = document.getElementById('adminPinEntry');
+  inp.value = '';
+  setTimeout(function() { inp.focus(); }, 100);
+}
+
+function hideAdminPinModal() {
+  document.getElementById('adminPinModal').style.display = 'none';
+}
+
+async function submitAdminPin() {
+  const inp = document.getElementById('adminPinEntry');
+  const entered = inp.value.replace(/\D/g, '').slice(0, 6);
+  if (entered.length !== 6) { showToast('PIN-ul trebuie să aibă 6 cifre!', true); return; }
+  const pins = Sync.getPins();
+  if (!pins || !pins.ADMIN) { showToast('PIN Admin nese!', true); return; }
+  const enteredHash = await hashPin(entered);
+  if (enteredHash !== pins.ADMIN && entered !== pins.ADMIN) {
+    showToast('PIN gre!', true);
+    inp.value = '';
+    inp.focus();
+    return;
+  }
+  hideAdminPinModal();
+  currentUser = { location: '', isAdmin: true };
+  doLogin();
+}
+
 document.addEventListener('keydown', e => {
   if (document.getElementById('loginScreen').style.display === 'none') return;
   var emailSection = document.getElementById('loginEmailSection');
@@ -392,6 +421,10 @@ document.getElementById('pinDisplay').addEventListener('input', function() {
   if (currentPin.length === 6) setTimeout(pinOk, 150);
 });
 
+document.getElementById('adminPinEntry').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); submitAdminPin(); }
+});
+
 function doLogin() {
   document.getElementById('loginScreen').style.display = 'none';
   const app = document.getElementById('app');
@@ -400,6 +433,9 @@ function doLogin() {
   app.style.flex = '1';
 
   document.getElementById('headerLoc').textContent = currentUser.isAdmin ? 'Admin' : currentUser.location;
+
+  const keyBtn = document.getElementById('adminKeyBtn');
+  if (keyBtn) keyBtn.style.display = currentUser.isAdmin ? 'none' : 'inline-flex';
 
   if (currentUser.isAdmin) {
     document.getElementById('adminTab').style.display = '';
@@ -436,6 +472,8 @@ async function doLogout(force) {
   document.getElementById('adminTab').style.display = 'none';
   document.getElementById('centralizatorTab').style.display = 'none';
   document.getElementById('adminLocRow').classList.remove('visible');
+  const keyBtn = document.getElementById('adminKeyBtn');
+  if (keyBtn) keyBtn.style.display = 'none';
   switchTab('order');
   updateBadge();
 }

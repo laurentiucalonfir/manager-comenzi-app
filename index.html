@@ -55,6 +55,7 @@
     <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
     <div class="header-right">
       <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
+      <button class="btn-icon" id="adminKeyBtn" onclick="showAdminPinModal()" style="display:none" title="Admin">🔑</button>
       <button class="btn-icon btn-logout" onclick="doLogout()">⏏</button>
     </div>
   </div>
@@ -264,6 +265,18 @@
 
 </div>
 
+<!-- ADMIN PIN MODAL -->
+<div class="modal-overlay" id="adminPinModal" style="display:none" onclick="hideAdminPinModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">🔑 Acces Admin</div>
+    <input class="search-input" id="adminPinEntry" type="text" maxlength="6" inputmode="numeric" placeholder="PIN admin" autocomplete="off" style="margin-bottom:12px;text-align:center;font-size:1.2rem;letter-spacing:8px">
+    <div class="row2" style="gap:8px">
+      <button class="btn-save-pins" onclick="submitAdminPin()" style="flex:1">Intră</button>
+      <button class="btn-logout" onclick="hideAdminPinModal()" style="flex:1;text-align:center">Anulează</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay" style="display:none">
   <div class="spinner"></div>
@@ -293,7 +306,7 @@
 })();
 </script>
 <script>
-const APP_VER = '82';
+const APP_VER = '83';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
