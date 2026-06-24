@@ -676,9 +676,9 @@ async function trimiteComanda() {
       tip_ambalaj: item.tip_ambalaj
     }))
   };
-  // FIFO: keep max 30 entries per location
+  // FIFO: keep max 10 entries per location
   const keys = Object.keys(history[locKey]).sort();
-  while (keys.length > 30) {
+  while (keys.length > 10) {
     const oldest = keys.shift();
     delete history[locKey][oldest];
   }

@@ -5,7 +5,7 @@ const ASSETS = [
   './js/data.js',
   './js/firebase-init.js',
   './js/sync.js?v=67',
-  './js/app.js?v=72'
+  './js/app.js?v=73'
 ];
 
 self.addEventListener('install', e => {
