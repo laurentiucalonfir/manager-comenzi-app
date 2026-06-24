@@ -23,6 +23,7 @@ const Sync = {
   connected: false,
   _grantsSyncResolve: null,
   grantsSync: null,
+  _pendingGrantsHash: null,
 
   async init() {
     this._loadLocal();
@@ -160,7 +161,8 @@ const Sync = {
           desanitized[this._desanitizeFirebaseKey(k)] = v;
         }
         const hash = JSON.stringify(desanitized);
-        console.log('📡 grants hash:', hash, 'match:', hash === this._localGrantsHash);
+        console.log('📡 grants hash:', hash, 'match:', hash === this._localGrantsHash, 'pending:', hash === this._pendingGrantsHash);
+        if (hash === this._pendingGrantsHash) return;
         if (hash !== this._localGrantsHash) {
           this._grants = desanitized;
           localStorage.setItem('promenada_grants', JSON.stringify(this._grants));
@@ -316,9 +318,10 @@ const Sync = {
   getGrants() { return this._grants || {}; },
 
   async saveGrants(data) {
+    this._pendingGrantsHash = this._localGrantsHash;
     this._grants = data;
     this._saveLocal();
-    if (!firebaseReady) return false;
+    if (!firebaseReady) { this._pendingGrantsHash = null; return false; }
     try {
       const sanitized = {};
       for (const [k, v] of Object.entries(data)) {
@@ -330,6 +333,8 @@ const Sync = {
     } catch (e) {
       console.warn('Firebase save error (grants):', e);
       throw e;
+    } finally {
+      setTimeout(() => { this._pendingGrantsHash = null; }, 60000);
     }
   },
 
