@@ -4,6 +4,17 @@ let cart = {};
 let lastResults = [];
 let _authResolve = null;
 
+// ── EmailJS config ──
+// Creează cont gratuit pe https://www.emailjs.com
+// 1. Connectează un serviciu de email (Gmail etc.) → obții Service ID
+// 2. Creează un template cu variabilele {{link}} și {{location}} → obții Template ID
+// 3. Din Account → API Keys → obții Public Key
+const EMAILJS_CONFIG = {
+  publicKey: '',    // ex: 'abc123def456'
+  serviceID: '',    // ex: 'service_abc123'
+  templateID: ''    // ex: 'template_xyz789'
+};
+
 function waitForAuth() {
   if (_authResolve) return _authResolve;
   _authResolve = new Promise(function(resolve) {
@@ -184,6 +195,11 @@ async function initApp() {
     console.warn('initApp error:', e);
   }
   updateFBStatus();
+
+  // Init EmailJS if configured
+  if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.publicKey) {
+    try { emailjs.init(EMAILJS_CONFIG.publicKey); } catch (e) { console.warn('EmailJS init error:', e); }
+  }
 
   // Check for email confirmation link FIRST
   if (await handleConfirmation()) { return; }
@@ -434,13 +450,28 @@ async function submitAdminEmail() {
     await firebase.database().ref('adminConfirmations/' + token).set({ email, location: loc, createdAt: Date.now() });
     const link = 'https://comenzi-corina-caffe.web.app/?admin_confirm=' + token;
     hideAdminPinModal();
-    // Copy link to clipboard and show toast
-    try { await navigator.clipboard.writeText(link); showToast('Link copiat! Verifică emailul pentru confirmare.'); } catch (e) {}
-    // Also open mailto
-    const subject = encodeURIComponent('Confirmare acces Admin');
-    const body = encodeURIComponent('Accesează acest link pentru a confirma accesul Admin:\n\n' + link);
-    window.open('mailto:' + email + '?subject=' + subject + '&body=' + body, '_blank');
-    showToast('✉️ Email deschis. Confirmă linkul pentru acces Admin.', false, 6000);
+    // Try to send via EmailJS if configured
+    let sent = false;
+    if (EMAILJS_CONFIG.publicKey && EMAILJS_CONFIG.serviceID && EMAILJS_CONFIG.templateID) {
+      try {
+        await emailjs.send(EMAILJS_CONFIG.serviceID, EMAILJS_CONFIG.templateID, {
+          to_email: email,
+          link: link,
+          location: loc
+        });
+        sent = true;
+        showToast('✉️ Email trimis la ' + email + '. Confirmă linkul pentru acces Admin.', false, 6000);
+      } catch (e) {
+        console.warn('EmailJS error:', e);
+      }
+    }
+    if (!sent) {
+      try { await navigator.clipboard.writeText(link); showToast('Link copiat! Verifică emailul pentru confirmare.'); } catch (e) {}
+      const subject = encodeURIComponent('Confirmare acces Admin');
+      const body = encodeURIComponent('Accesează acest link pentru a confirma accesul Admin:\n\n' + link);
+      window.open('mailto:' + email + '?subject=' + subject + '&body=' + body, '_blank');
+      showToast('✉️ Email deschis. Confirmă linkul pentru acces Admin.', false, 6000);
+    }
   } catch (e) {
     showToast('Eroare: ' + e.message, true);
   }
