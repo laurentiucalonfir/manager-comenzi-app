@@ -402,7 +402,7 @@ async function doLogout(force) {
   if (!force && currentUser && currentUser.location) {
     const grants = Sync.getGrants();
     if (grants[currentUser.location]) {
-      grants[currentUser.location] = { granted: false, loggedOutAt: Date.now() };
+      delete grants[currentUser.location];
       try { await Sync.saveGrants(grants); } catch (e) {}
     }
   }
