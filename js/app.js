@@ -436,6 +436,8 @@ function doLogin() {
 
   const keyBtn = document.getElementById('adminKeyBtn');
   if (keyBtn) keyBtn.style.display = currentUser.isAdmin ? 'none' : 'inline-flex';
+  const logoutBtn = document.getElementById('headerLogoutBtn');
+  if (logoutBtn) logoutBtn.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
 
   if (currentUser.isAdmin) {
     document.getElementById('adminTab').style.display = '';
@@ -474,6 +476,8 @@ async function doLogout(force) {
   document.getElementById('adminLocRow').classList.remove('visible');
   const keyBtn = document.getElementById('adminKeyBtn');
   if (keyBtn) keyBtn.style.display = 'none';
+  const headerLogoutBtn = document.getElementById('headerLogoutBtn');
+  if (headerLogoutBtn) headerLogoutBtn.style.display = 'none';
   switchTab('order');
   updateBadge();
 }
