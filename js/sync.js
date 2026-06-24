@@ -129,7 +129,7 @@ const Sync = {
       const hash = JSON.stringify(val);
       if (hash === this._localDBHash) return;
       this._db = val;
-      localStorage.setItem('promenada_db', hash);
+      localStorage.setItem('promenada_db', JSON.stringify(this._db));
       this._localDBHash = hash;
       this._notifyDBListeners();
     });
@@ -191,7 +191,7 @@ const Sync = {
       const hash = JSON.stringify(desanitized);
       if (hash === this._localOrdersHash) return;
       this._orders = desanitized;
-      localStorage.setItem('promenada_orders', hash);
+      localStorage.setItem('promenada_orders', JSON.stringify(this._orders));
       this._localOrdersHash = hash;
       this._notifyOrdersListeners();
     });
@@ -203,7 +203,7 @@ const Sync = {
       const hash = JSON.stringify(desanitized);
       if (hash === this._localHistoryHash) return;
       this._history = desanitized;
-      localStorage.setItem('promenada_history', hash);
+      localStorage.setItem('promenada_history', JSON.stringify(this._history));
       this._localHistoryHash = hash;
       this._notifyHistoryListeners();
     });
