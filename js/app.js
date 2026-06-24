@@ -108,7 +108,7 @@ document.addEventListener('visibilitychange', () => {
         const val = snap.val();
         if (!val || !val.granted) {
           showToast('Accesul tău a fost revocat!', true);
-          doLogout();
+          doLogout(true);
         }
       }).catch(() => {});
     }
@@ -123,7 +123,7 @@ window.addEventListener('storage', e => {
       const g = grants[currentUser.location];
       if (!g || !g.granted) {
         showToast('Accesul tău a fost revocat!', true);
-        doLogout();
+        doLogout(true);
       }
     } catch (e) {}
   }
@@ -160,7 +160,7 @@ async function initApp() {
       const val = snap.val();
       if (!val || !val.granted) {
         showToast('Accesul tău a fost revocat!', true);
-        doLogout();
+        doLogout(true);
       }
     }).catch(() => {});
   }, 5000);
@@ -173,7 +173,7 @@ async function initApp() {
       const g = grants[currentUser.location];
       if (!g || !g.granted) {
         showToast('Accesul tău a fost revocat!', true);
-        doLogout();
+        doLogout(true);
       }
     }
   });
@@ -369,8 +369,8 @@ function doLogin() {
   saveSession();
 }
 
-function doLogout() {
-  if (!confirm('Deconectare?')) return;
+function doLogout(force) {
+  if (!force && !confirm('Deconectare?')) return;
   currentUser = null;
   cart = {};
   lastResults = [];
