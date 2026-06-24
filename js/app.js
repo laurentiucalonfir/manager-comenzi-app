@@ -139,6 +139,37 @@ window.addEventListener('storage', e => {
   }
 });
 
+// ── EMAIL CONFIRMATION ──
+async function handleConfirmation() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('confirm');
+  if (!token) return false;
+  if (!firebaseReady) return false;
+  try {
+    const snap = await firebase.database().ref('confirmations/' + token).once('value');
+    const data = snap.val();
+    if (!data || !data.location) {
+      showToast('Link de confirmare invalid sau expirat!', true);
+      return false;
+    }
+    const loc = data.location;
+    // Delete token immediately (one-time use)
+    await firebase.database().ref('confirmations/' + token).remove();
+    // Clean URL
+    const url = new URL(window.location);
+    url.searchParams.delete('confirm');
+    window.history.replaceState({}, '', url);
+    // Set user and login
+    currentUser = { location: loc, isAdmin: false };
+    doLogin();
+    showToast('✅ Dispozitiv confirmat pentru ' + loc + '!');
+    return true;
+  } catch (e) {
+    console.warn('handleConfirmation error:', e);
+    return false;
+  }
+}
+
 // ── INIT ──
 async function initApp() {
   try {
@@ -148,6 +179,9 @@ async function initApp() {
     console.warn('initApp error:', e);
   }
   updateFBStatus();
+
+  // Check for email confirmation link FIRST
+  if (await handleConfirmation()) { return; }
 
   // Wait for grants sync from Firebase so login doesn't use stale data
   try { if (Sync.grantsSync) await Promise.race([Sync.grantsSync, new Promise(function(r) { setTimeout(r, 5000); })]); } catch (e) {}
@@ -295,15 +329,14 @@ function updatePinDisplay() {
 async function pinOk() {
   if (!currentPin) return;
   const pins = Sync.getPins();
-  const grants = Sync.getGrants();
   const entered = currentPin;
   currentPin = '';
   updatePinDisplay();
 
+  // Admin only login via PIN
   var enteredHash = await hashPin(entered);
   var needsUpgrade = false;
 
-  // Admin login - check hash first, then plaintext (backward compat)
   if (pins && pins.ADMIN) {
     if (enteredHash === pins.ADMIN || entered === pins.ADMIN) {
       if (entered === pins.ADMIN && enteredHash !== pins.ADMIN) {
@@ -315,55 +348,6 @@ async function pinOk() {
       doLogin();
       if (needsUpgrade) try { await Sync.savePins(pins); } catch (e) {}
       return;
-    }
-  }
-
-  // Helper to attempt login for a location
-  async function tryLogin(loc) {
-    const g = grants[loc];
-    if (g && g.granted) {
-      currentUser = { location: loc, isAdmin: false };
-      doLogin();
-      return true;
-    }
-    if (g && g.code === entered) {
-      g.granted = true;
-      g.code = null;
-      try { await Sync.saveGrants(grants); } catch (e) {}
-      currentUser = { location: loc, isAdmin: false };
-      doLogin();
-      return true;
-    }
-    return false;
-  }
-
-  // Check PIN in pins first - match by hash or plaintext
-  var match = null;
-  if (pins) {
-    for (var loc in pins) {
-      if (loc === 'ADMIN') continue;
-      var stored = pins[loc];
-      if (stored === enteredHash || stored === entered) {
-        match = loc;
-        if (stored === entered && stored !== enteredHash) {
-          pins[loc] = enteredHash;
-          needsUpgrade = true;
-        }
-        break;
-      }
-    }
-  }
-  if (match) {
-    if (tryLogin(match)) {
-      if (needsUpgrade) try { await Sync.savePins(pins); } catch (e) {}
-      return;
-    }
-  }
-
-  // Fallback: search for matching code in grants
-  if (grants) {
-    for (const [loc, g] of Object.entries(grants)) {
-      if (g && g.code === entered && tryLogin(loc)) return;
     }
   }
 
@@ -813,7 +797,7 @@ function copyAllMessages() {
 // ── ADMIN GRANTS ──
 function adminRenderGrants() {
   const grants = Sync.getGrants();
-  const pins = Sync.getPins();
+  const emails = Sync.getEmails();
   const DB = Sync.getDB();
   const el = document.getElementById('adminGrantList');
   const allLocs = new Set();
@@ -826,28 +810,19 @@ function adminRenderGrants() {
   allLocs.forEach(loc => {
     const g = grants[loc];
     const granted = g && g.granted;
-    const hasCode = g && g.code;
-    const currentPin = pins[loc] || '';
+    const locEmail = emails[loc] || '';
     const row = document.createElement('div'); row.className = 'grant-row';
     const status = granted ? '<span class="grant-status on" title="Acces activ">✓</span>' : '<span class="grant-status off" title="Fără acces">✕</span>';
-    let codeDisplay = '';
-    if (hasCode) codeDisplay = `<span class="grant-code">Cod: <strong>${g.code}</strong></span>`;
     const loggedOutStr = g && g.loggedOutAt ? '<span class="grant-logged-out">(s-a delogat)</span>' : '';
     row.innerHTML = `${status}<span class="grant-loc">${escHtml(loc)}</span>${loggedOutStr}
-      <input class="grant-pin" type="text" maxlength="6" inputmode="numeric" value="${currentPin}" data-loc="${loc}" onchange="adminSetPin(this)" placeholder="PIN">
-      ${codeDisplay}<span style="flex:1"></span>`;
+      <input class="grant-pin" type="text" value="${escHtml(locEmail)}" data-loc="${loc}" onchange="adminSetEmail(this)" placeholder="Email locație" style="width:180px;font-size:0.75rem">
+      <span style="flex:1"></span>`;
     if (granted) {
       const revokeBtn = document.createElement('button');
       revokeBtn.className = 'btn-grant-revoke';
       revokeBtn.textContent = 'Revocă';
       revokeBtn.onclick = () => adminRevokeAccess(loc);
       row.appendChild(revokeBtn);
-    } else if (hasCode) {
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'btn-grant-cancel';
-      cancelBtn.textContent = 'Anulează cod';
-      cancelBtn.onclick = () => adminCancelCode(loc);
-      row.appendChild(cancelBtn);
     } else {
       const grantBtn = document.createElement('button');
       grantBtn.className = 'btn-grant-add';
@@ -859,18 +834,76 @@ function adminRenderGrants() {
   });
 }
 
-async function adminGrantAccess(loc) {
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const grants = Sync.getGrants();
-  grants[loc] = { granted: false, code };
+async function adminSetEmail(inp) {
+  const loc = inp.dataset.loc;
+  const val = inp.value.trim();
+  if (!val) return;
+  const emails = Sync.getEmails();
+  emails[loc] = val;
   try {
-    const ok = await Sync.saveGrants(grants);
-    if (ok === false) { showToast('Firebase neconectat!', true); return; }
-    adminRenderGrants();
-    showToast(`Cod unic pentru ${loc}: ${code}`, false, 6000);
+    await Sync.saveEmails(emails);
+    showToast(`Email salvat pentru ${loc}!`);
   } catch (e) {
     showToast('Eroare: ' + e.message, true);
   }
+}
+
+async function adminGrantAccess(loc) {
+  const emails = Sync.getEmails();
+  const email = emails[loc];
+  if (!email) { showToast('Introdu email pentru ' + loc + ' întâi!', true); return; }
+  const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+  const confirmRef = firebase.database().ref('confirmations/' + token);
+  try {
+    await confirmRef.set({ location: loc, email, createdAt: Date.now() });
+    const link = 'https://comenzi-corina-caffe.web.app/?confirm=' + token;
+    const grants = Sync.getGrants();
+    grants[loc] = { granted: true };
+    await Sync.saveGrants(grants);
+    showGrantLinkModal(link, email, loc);
+    adminRenderGrants();
+  } catch (e) {
+    showToast('Eroare: ' + e.message, true);
+  }
+}
+
+function showGrantLinkModal(link, email, loc) {
+  const existing = document.getElementById('grantLinkModal');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'grantLinkModal';
+  div.className = 'modal-overlay';
+  div.style.cssText = 'display:flex;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center';
+  div.onclick = function() { div.remove(); };
+  div.innerHTML = `<div class="modal-content" onclick="event.stopPropagation()">
+    <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">🔗 Link confirmare pentru ${escHtml(loc)}</div>
+    <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px">Trimite acest link locației:</div>
+    <div style="background:var(--bg);padding:8px;border-radius:6px;word-break:break-all;font-size:0.72rem;margin-bottom:10px;border:1px solid var(--border)" id="grantLinkText">${link}</div>
+    <div class="row2" style="gap:8px">
+      <button class="btn-save-pins" onclick="copyGrantLink()" style="flex:1">📋 Copiază</button>
+      <button class="btn-grant-add" onclick="emailGrantLink()" style="flex:1">✉️ Trimite email</button>
+      <button class="btn-logout" onclick="document.getElementById('grantLinkModal').remove()" style="flex:1;text-align:center">OK</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  window._grantLink = link;
+  window._grantEmail = email;
+}
+
+function copyGrantLink() {
+  if (!window._grantLink) return;
+  navigator.clipboard.writeText(window._grantLink).then(() => {
+    showToast('Link copiat!');
+  }).catch(() => {
+    showToast('Link: ' + window._grantLink, false, 8000);
+  });
+}
+
+function emailGrantLink() {
+  if (!window._grantLink || !window._grantEmail) return;
+  const subject = encodeURIComponent('Confirmare acces aplicație');
+  const body = encodeURIComponent('Accesează acest link pentru a confirma dispozitivul:\n\n' + window._grantLink);
+  window.open('mailto:' + window._grantEmail + '?subject=' + subject + '&body=' + body, '_blank');
 }
 
 async function adminRevokeAccess(loc) {
@@ -882,34 +915,6 @@ async function adminRevokeAccess(loc) {
     if (ok === false) { showToast('Firebase neconectat!', true); return; }
     adminRenderGrants();
     showToast(`Acces revocat pentru ${loc}!`);
-  } catch (e) {
-    showToast('Eroare: ' + e.message, true);
-  }
-}
-
-async function adminCancelCode(loc) {
-  const grants = Sync.getGrants();
-  delete grants[loc];
-  try {
-    const ok = await Sync.saveGrants(grants);
-    if (ok === false) { showToast('Firebase neconectat!', true); return; }
-    adminRenderGrants();
-    showToast(`Cod anulat pentru ${loc}!`);
-  } catch (e) {
-    showToast('Eroare: ' + e.message, true);
-  }
-}
-
-async function adminSetPin(inp) {
-  const loc = inp.dataset.loc;
-  let val = inp.value.replace(/\D/g, '').slice(0, 6);
-  inp.value = val;
-  if (val.length !== 6) return;
-  const pins = Sync.getPins();
-  pins[loc] = await hashPin(val);
-  try {
-    await Sync.savePins(pins);
-    showToast(`PIN setat pentru ${loc}!`);
   } catch (e) {
     showToast('Eroare: ' + e.message, true);
   }
