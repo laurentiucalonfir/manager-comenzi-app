@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Comenzi Corina Caffe">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+<title>Comenzi Corina Caffe</title>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen" style="display:none">
+  <div class="login-logo">C<span>orina Caffe</span></div>
+  <div class="login-sub">Sistem comenzi furnizori</div>
+  <div class="login-label">Introdu PIN-ul</div>
+  <input class="pin-display" id="pinDisplay" type="text" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="······" maxlength="20">
+  <div class="pin-hint">PIN 6 cifre</div>
+  <div class="numpad">
+    <button class="numpad-btn" onclick="pinPress('1')">1</button>
+    <button class="numpad-btn" onclick="pinPress('2')">2</button>
+    <button class="numpad-btn" onclick="pinPress('3')">3</button>
+    <button class="numpad-btn" onclick="pinPress('4')">4</button>
+    <button class="numpad-btn" onclick="pinPress('5')">5</button>
+    <button class="numpad-btn" onclick="pinPress('6')">6</button>
+    <button class="numpad-btn" onclick="pinPress('7')">7</button>
+    <button class="numpad-btn" onclick="pinPress('8')">8</button>
+    <button class="numpad-btn" onclick="pinPress('9')">9</button>
+    <button class="numpad-btn del" onclick="pinDel()">⌫</button>
+    <button class="numpad-btn" onclick="pinPress('0')">0</button>
+    <button class="numpad-btn ok" onclick="pinOk()">OK</button>
+  </div>
+  <div id="loginEmailSection" style="display:none;margin-top:16px;width:100%">
+    <div class="login-label">Autentificare Admin</div>
+    <input class="search-input" id="emailInput" type="email" placeholder="Email" style="margin-bottom:8px;width:100%;box-sizing:border-box">
+    <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="margin-bottom:8px;width:100%;box-sizing:border-box">
+    <button class="btn-main" onclick="loginWithEmail()" style="width:100%;padding:13px">Autentificare</button>
+    <button class="btn-secondary" onclick="toggleEmailLogin()" style="width:100%;margin-top:6px;padding:13px">← Înapoi la PIN</button>
+  </div>
+  <div style="text-align:center;margin-top:8px">
+    <button class="btn-email-toggle" onclick="toggleEmailLogin()" style="background:none;border:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;padding:4px 8px">Autentificare admin cu email</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;flex:1;flex-direction:column">
+
+  <div class="header">
+    <div class="header-logo">C<span>orina Caffe</span></div>
+    <span class="header-loc" id="headerLoc"></span>
+    <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
+    <div class="header-right">
+      <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
+      <button class="btn-icon btn-logout" onclick="doLogout()">⏏</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="switchTab('order')" data-tab="order">📋 Comandă</div>
+    <div class="tab" onclick="switchTab('cart')" data-tab="cart">🛒 Coș</div>
+    <div class="tab" onclick="switchTab('results')" data-tab="results">📤 Mesaje</div>
+    <div class="tab" onclick="switchTab('history')" data-tab="history">📜 Istoric</div>
+    <div class="tab" id="centralizatorTab" onclick="switchTab('centralizator')" data-tab="centralizator" style="display:none">📊 Centralizator</div>
+    <div class="tab" id="adminTab" onclick="switchTab('admin')" data-tab="admin" style="display:none">⚙️ Admin</div>
+  </div>
+
+  <!-- ORDER -->
+  <div class="view active" id="view-order">
+    <div class="order-controls">
+      <div class="row2">
+        <div class="select-wrap">
+          <select id="supplierSelect" onchange="renderProducts()">
+            <option value="">— Toți furnizorii —</option>
+          </select>
+        </div>
+        <div class="select-wrap admin-loc-row" id="adminLocRow">
+          <select id="locationSelect" onchange="renderProducts()">
+            <option value="">— Toate locațiile —</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="search-wrap">
+          <input class="search-input" id="searchInput" placeholder="🔍 Caută produs..." oninput="renderProducts()">
+          <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">&times;</button>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="showAllToggle" onchange="renderProducts()"><span class="toggle-slider"></span></label>
+          <span>Toate</span>
+        </div>
+      </div>
+    </div>
+    <div class="product-list" id="productList"></div>
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="resetCart()">🗑</button>
+      <button class="btn-main" onclick="switchTab('cart')">Coș (<span id="cartCount">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- CART -->
+  <div class="view" id="view-cart">
+    <div class="cart-list" id="cartList"></div>
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="switchTab('order')">← Înapoi</button>
+      <button class="btn-main" id="trimiteBtn" onclick="trimiteComanda()" disabled>📤 Trimite comanda</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="view" id="view-results">
+    <div class="results-list" id="resultsList">
+      <div class="empty"><div class="empty-icon">💬</div><div>Mesajele apar aici după trimitere</div></div>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-main" onclick="switchTab('cart')">← Coș</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="view" id="view-history">
+    <div class="history-list" id="historyList">
+      <div class="empty"><div class="empty-icon">📜</div><div>Nicio comandă în istoric</div></div>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-main" onclick="switchTab('order')">← Înapoi</button>
+    </div>
+  </div>
+  <!-- CENTRALIZATOR -->
+  <div class="view" id="view-centralizator">
+    <div class="centralizator-list" id="centralizatorList"></div>
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="switchTab('order')">← Înapoi</button>
+      <button class="btn-secondary" onclick="centralizatorReset()">🗑 Resetează</button>
+      <button class="btn-main" id="centralizatorTrimiteBtn" onclick="centralizatorTrimite()">📋 Copiază toate comenzile</button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="view" id="view-admin">
+    <div class="admin-panel">
+      <div class="admin-section">
+        <h3>Acces locații</h3>
+        <div id="adminGrantList"></div>
+      </div>
+      <div class="admin-section">
+        <h3>PIN Admin</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="grant-pin" id="adminPinInput" type="text" maxlength="6" inputmode="numeric" placeholder="PIN nou" style="width:120px">
+          <button class="btn-grant-add" onclick="adminChangePin()">Schimbă</button>
+        </div>
+      </div>
+      <div class="admin-section">
+        <h3>Produse</h3>
+        <div id="adminProductSection">
+          <div class="row2" style="margin-bottom:8px">
+            <div class="select-wrap">
+              <select id="adminProdSupplier" onchange="adminRenderProducts()"></select>
+            </div>
+          </div>
+          <div id="adminProductList"></div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px">Adaugă produs nou</div>
+            <input class="search-input" id="newProdName" placeholder="Nume produs" style="margin-bottom:6px">
+            <div class="row2" style="margin-bottom:6px">
+              <div class="select-wrap" style="flex:1">
+                <select id="newProdTip">
+                  <option value="buc">buc</option>
+                  <option value="kg">kg</option>
+                  <option value="bax">bax</option>
+                  <option value="set">set</option>
+                  <option value="l">l</option>
+                  <option value="plv">plv</option>
+                </select>
+              </div>
+              <input class="search-input" id="newProdAmbalaj" placeholder="Ambalaj" value="1" style="width:70px;text-align:center">
+            </div>
+            <label class="toggle-row" style="margin-bottom:10px">
+              <label class="toggle"><input type="checkbox" id="newProdAfiseaza" checked><span class="toggle-slider"></span></label>
+              <span>Vizibil în listă</span>
+            </label>
+            <button class="btn-save-pins" onclick="adminAddProduct()">+ Adaugă produs</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit product modal -->
+      <div id="editProdModal" class="modal-overlay" style="display:none" onclick="closeEditModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">Editează produs</div>
+          <input class="search-input" id="editProdName" placeholder="Nume produs" style="margin-bottom:6px">
+          <div class="row2" style="margin-bottom:6px">
+            <div class="select-wrap" style="flex:1">
+              <select id="editProdTip">
+                <option value="buc">buc</option>
+                <option value="kg">kg</option>
+                <option value="bax">bax</option>
+                <option value="set">set</option>
+                <option value="l">l</option>
+                <option value="plv">plv</option>
+              </select>
+            </div>
+            <input class="search-input" id="editProdAmbalaj" placeholder="Ambalaj" style="width:70px;text-align:center">
+          </div>
+          <label class="toggle-row" style="margin-bottom:12px">
+            <label class="toggle"><input type="checkbox" id="editProdAfiseaza" checked><span class="toggle-slider"></span></label>
+            <span>Vizibil în listă</span>
+          </label>
+          <div class="row2" style="gap:8px">
+            <button class="btn-save-pins" onclick="adminSaveEditProduct()" style="flex:1">Salvează</button>
+            <button class="btn-logout" onclick="closeEditModal()" style="flex:1;text-align:center">Anulează</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>Contact furnizori</h3>
+        <div class="row2" style="margin-bottom:8px">
+          <div class="select-wrap">
+            <select id="adminPhoneSupplier" onchange="adminRenderSupplierContact()"></select>
+          </div>
+        </div>
+        <div id="adminPhoneList"></div>
+        <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="margin-top:8px">💾 Salvează contact</button>
+      </div>
+      <div class="admin-section">
+        <h3>Gestiuni</h3>
+        <div id="adminLocationSection">
+          <div class="row2" style="margin-bottom:8px">
+            <div class="select-wrap">
+              <select id="adminLocSupplier" onchange="adminRenderLocations()"></select>
+            </div>
+          </div>
+          <div id="adminLocationList"></div>
+          <div class="row2" style="margin-top:8px">
+            <div class="select-wrap" style="flex:1">
+              <select id="addLocSelect"><option value="">— Selectează gestiune —</option></select>
+            </div>
+            <button class="btn-save-pins" onclick="adminAddLocationSelected()" style="white-space:nowrap">+ Adaugă</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <h3>Cont curent</h3>
+        <div id="adminEmailDisplay" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <input class="search-input" id="changeEmailInput" type="email" placeholder="Email nou" style="flex:1;min-width:140px;box-sizing:border-box">
+          <button class="btn-grant-add" onclick="adminChangeEmail()">Schimbă email</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <input class="search-input" id="changePassInput" type="password" placeholder="Parolă nouă" style="flex:1;min-width:140px;box-sizing:border-box">
+          <button class="btn-grant-add" onclick="adminChangePassword()">Schimbă parola</button>
+        </div>
+        <button class="btn-logout" onclick="doLogout()" style="width:100%;padding:13px">⏏ Deconectare</button>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-main" onclick="switchTab('order')">← Înapoi la comenzi</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Se trimite...</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/sync.js?v=67"></script>
+  <script src="js/app.js?v=71"></script>
+<script>
+(function() {
+  var el = document.getElementById('fbStatus');
+  if (el) {
+    if (typeof firebaseReady !== 'undefined' && firebaseReady) {
+      el.textContent = '●'; el.style.color = '#2dd4bf'; el.title = 'Firebase conectat';
+    } else {
+      el.textContent = '✕'; el.style.color = '#e94560'; el.title = 'Firebase neconectat';
+    }
+  }
+})();
+</script>
+<script>
+const APP_VER = '68';
+if ('serviceWorker' in navigator) {
+  let reg = null;
+
+  function swSaveAndReload() {
+    try {
+      if (typeof currentUser !== 'undefined' && currentUser) {
+        sessionStorage.setItem('sess_user', JSON.stringify(currentUser));
+        sessionStorage.setItem('sess_cart', JSON.stringify(cart));
+      }
+    } catch (e) {}
+    window.location.reload();
+  }
+
+  function swActivateWaiting() {
+    if (!reg || !reg.waiting) return;
+    reg.waiting.postMessage({ action: 'skipWaiting' });
+  }
+
+  function swCheckUpdate() {
+    if (reg) reg.update();
+  }
+
+  navigator.serviceWorker.register('sw.js?v=' + APP_VER, {
+    updateViaCache: 'none'
+  }).then(r => {
+    reg = r;
+    r.update();
+
+    if (r.waiting) {
+      swActivateWaiting();
+    }
+
+    r.addEventListener('updatefound', () => {
+      const sw = r.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          swActivateWaiting();
+        }
+      });
+    });
+  }).catch(() => {});
+
+  navigator.serviceWorker.addEventListener('controllerchange', swSaveAndReload);
+  setInterval(swCheckUpdate, 60000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      swCheckUpdate();
+      setTimeout(swActivateWaiting, 500);
+    }
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "database": {
+    "rules": "firebase.rules.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "**/node_modules/**",
+      "**/backup-full/**",
+      "deploy.bat",
+      "bump-version.ps1",
+      "firebase.json",
+      "firebase.rules.json",
+      "package-lock.json",
+      "version.json",
+      "**/*.exe",
+      "**/*.dll",
+      "**/*.ps1",
+      "**/*.bat",
+      "**/*.cmd",
+      "**/manager-comenzi-app-master/**"
+    ],
+    "headers": [
+      {
+        "source": "sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}
