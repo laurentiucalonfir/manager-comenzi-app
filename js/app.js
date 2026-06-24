@@ -425,12 +425,15 @@ async function submitAdminEmail() {
   };
   try {
     localStorage.setItem('emailForAdminConfirm', email);
+    console.log('📧 sendSignInLinkToEmail to:', email, 'settings:', JSON.stringify(actionCodeSettings));
     await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
+    console.log('📧 Email sent successfully');
     hideAdminPinModal();
     showToast('✉️ Email trimis la ' + email + '. Verifică inbox-ul și deschide link-ul.', false, 8000);
   } catch (e) {
     localStorage.removeItem('emailForAdminConfirm');
-    showToast('Eroare trimitere email: ' + e.message, true);
+    console.error('📧 sendSignInLinkToEmail error:', e.code, e.message);
+    showToast('Eroare trimitere email: ' + (e.message || 'necunoscută'), true);
   }
 }
 
