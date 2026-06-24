@@ -403,6 +403,12 @@ async function doLogout(force) {
     const grants = Sync.getGrants();
     delete grants[currentUser.location];
     try { await Sync.saveGrants(grants); } catch (e) {}
+    // force re-read from local storage to ensure in-memory state is clean
+    try {
+      const saved = localStorage.getItem('promenada_grants');
+      Sync._grants = saved ? JSON.parse(saved) : {};
+      Sync._localGrantsHash = JSON.stringify(Sync._grants);
+    } catch (e) {}
   }
   currentUser = null;
   cart = {};
