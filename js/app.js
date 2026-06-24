@@ -174,6 +174,22 @@ async function initApp() {
           doLogout(true);
         }
       }).catch(() => {});
+    } else {
+      fbReadWithTimeout('grants', 10000).then(snap => {
+        const val = snap.val();
+        if (!val) return;
+        const desanitized = {};
+        for (const [k, v] of Object.entries(val)) {
+          desanitized[Sync._desanitizeFirebaseKey(k)] = v;
+        }
+        const hash = JSON.stringify(desanitized);
+        if (hash !== Sync._localGrantsHash) {
+          Sync._grants = desanitized;
+          localStorage.setItem('promenada_grants', JSON.stringify(Sync._grants));
+          Sync._localGrantsHash = hash;
+          adminRenderGrants();
+        }
+      }).catch(() => {});
     }
   }, 5000);
 
