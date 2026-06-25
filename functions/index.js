@@ -22,11 +22,20 @@ exports.sendOrderNotification = onValueWritten(
 
     const tokensSnap = await admin.database().ref('fcmTokens').once('value');
     const tokensMap = tokensSnap.val();
-    console.log('FCM tokens map:', tokensMap ? Object.keys(tokensMap).length : 'null');
-    if (!tokensMap) return;
+    if (!tokensMap) { console.log('No tokens map'); return; }
 
-    const tokens = Object.keys(tokensMap).filter(t => typeof t === 'string' && t.length > 20);
-    console.log('Valid tokens:', tokens.length);
+    // Build deduplicated token list; support both old {token: true} and new {deviceId: token} formats
+    const tokenToKey = {};
+    Object.keys(tokensMap).forEach(function(key) {
+      var val = tokensMap[key];
+      if (typeof val === 'string' && val.length > 20) {
+        tokenToKey[val] = key; // new format: key=deviceId, val=token
+      } else if (val === true && typeof key === 'string' && key.length > 20) {
+        tokenToKey[key] = key; // old format: key=token, val=true
+      }
+    });
+    const tokens = Object.keys(tokenToKey);
+    console.log('Tokens deduplicated:', tokens.length, 'unique, from', Object.keys(tokensMap).length, 'entries');
     if (!tokens.length) return;
 
     const result = await admin.messaging().sendEachForMulticast({
@@ -41,11 +50,11 @@ exports.sendOrderNotification = onValueWritten(
 
     if (result.failureCount > 0) {
       const cleanups = [];
-      result.responses.forEach((resp, i) => {
+      result.responses.forEach(function(resp, i) {
         if (resp.error) {
           console.log('FCM error for token', i, ':', resp.error.code, resp.error.message);
           if (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered') {
-            cleanups.push(admin.database().ref('fcmTokens/' + tokens[i]).remove());
+            cleanups.push(admin.database().ref('fcmTokens/' + tokenToKey[tokens[i]]).remove());
           }
         }
       });

@@ -413,30 +413,19 @@ function doLogin() {
           }).then(function(t) {
             window._fcmToken = t;
             var ref = firebase.database().ref('fcmTokens');
-            var oldToken;
-            try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
-            if (oldToken && oldToken !== t) ref.child(oldToken).remove();
-            ref.child(t).set(true);
-            try { localStorage.setItem('_fcmToken', t); } catch (e) {}
+            var deviceId;
+            try { deviceId = localStorage.getItem('_fcmDeviceId'); } catch (e) {}
+            if (!deviceId) {
+              deviceId = 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+              try { localStorage.setItem('_fcmDeviceId', deviceId); } catch (e) {}
+            }
+            ref.child(deviceId).set(t);
           }).catch(function(e) {
             console.log('FCM token error:', e);
           });
         }
         if (Notification.permission === 'granted') _fcmGetToken();
         window._fcm.getToken = _fcmGetToken;
-        try {
-          fm.onTokenRefresh(function() {
-            fm.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
-              var ref = firebase.database().ref('fcmTokens');
-              var oldToken;
-              try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
-              if (oldToken && oldToken !== t) ref.child(oldToken).remove();
-              ref.child(t).set(true);
-              window._fcmToken = t;
-              try { localStorage.setItem('_fcmToken', t); } catch (e) {}
-            });
-          });
-        } catch (e) {}
       }
     } catch(e) { console.log('FCM init error:', e); }
   }
