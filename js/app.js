@@ -132,19 +132,21 @@ window.addEventListener('storage', e => {
 
 function enableFCM() {
   try {
-    if (!window._fcm) return;
     var btn = document.getElementById('fcmBtn');
     if (btn) btn.style.display = 'none';
     document.getElementById('fcmStatus').textContent = '⏳ se cere permisiunea...';
-    window._fcm.fm.requestPermission().then(function(g) {
+    Notification.requestPermission().then(function(g) {
       if (g === 'granted') {
-        window._fcm.save();
+        document.getElementById('fcmStatus').textContent = '✅ Notificări active';
+        if (window._fcm && window._fcm.getToken) window._fcm.getToken();
       } else {
         document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
       }
-    }).catch(function() {
-      document.getElementById('fcmStatus').textContent = '⛔ Eroare permisiune';
     });
+    setTimeout(function() {
+      var s = document.getElementById('fcmStatus');
+      if (s && s.textContent === '⏳ se cere permisiunea...') s.textContent = '⚠️ Nu s-a primit răspuns. Încearcă din nou.';
+    }, 10000);
   } catch(e) { console.log('enableFCM error:', e); }
 }
 
@@ -206,7 +208,8 @@ async function initApp() {
       if (typeof window._adminOrderCnt !== 'undefined' && cnt > window._adminOrderCnt) {
         var b = document.getElementById('centralizatorBadge');
         if (b) b.style.display = 'inline-block';
-        if (navigator.setAppBadge) navigator.setAppBadge(cnt - window._adminOrderCnt);
+        var badgeNum = cnt - window._adminOrderCnt;
+        if (navigator.setAppBadge) navigator.setAppBadge(badgeNum).catch(function() {});
         showToast('Comandă nouă!');
       }
       window._adminOrderCnt = cnt;
@@ -416,24 +419,28 @@ function doLogin() {
     try {
       if (firebase.messaging && typeof Notification !== 'undefined') {
         var fm = firebase.messaging();
-        function _saveFCM() {
-          fm.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
+        window._fcm = { fm: fm };
+        // Helper: get token using existing service worker
+        function _fcmGetToken() {
+          navigator.serviceWorker.ready.then(function(reg) {
+            return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
+          }).then(function(t) {
             window._fcmToken = t;
             firebase.database().ref('fcmTokens/' + t).set(true);
-            document.getElementById('fcmStatus').textContent = '✅ Notificări active';
           }).catch(function(e) {
             document.getElementById('fcmStatus').textContent = '❌ Eroare: ' + e.message;
           });
         }
         if (Notification.permission === 'granted') {
-          _saveFCM();
+          document.getElementById('fcmStatus').textContent = '✅ Notificări active';
+          _fcmGetToken();
         } else if (Notification.permission === 'denied') {
           document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
         } else {
           document.getElementById('fcmStatus').textContent = '🔘 Permisiunea necesară';
           document.getElementById('fcmBtn').style.display = '';
         }
-        window._fcm = { fm: fm, save: _saveFCM };
+        window._fcm.getToken = _fcmGetToken;
       }
     } catch(e) { console.log('FCM init error:', e); }
   }
@@ -1224,20 +1231,17 @@ function renderCentralizator() {
   if (b) b.style.display = 'none';
   if (navigator.clearAppBadge) navigator.clearAppBadge();
 
-  // cleanup orders older than 24h
+  // cleanup orders older than 24h (remove individually, don't rewrite all orders)
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  let changed = false;
   const orders = {};
   Object.entries(raw).forEach(([id, order]) => {
     if (order.timestamp && order.timestamp >= cutoff) {
       orders[id] = order;
     } else {
-      changed = true;
+      // remove old order entry silently — avoids retriggering the Cloud Function
+      Sync.removeOrderEntry(id).catch(() => {});
     }
   });
-  if (changed) {
-    Sync.saveOrders(orders).catch(() => {});
-  }
 
   const entries = Object.values(orders);
   if (!entries.length) {

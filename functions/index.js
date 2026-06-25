@@ -13,10 +13,12 @@ exports.sendOrderNotification = onValueWritten(
     if (order.timestamp && Date.now() - order.timestamp > 60000) { console.log('Old order, skip'); return; }
 
     const debounceKey = 'debounce_' + order.location;
-    const last = await admin.database().ref('_fcm/' + debounceKey).once('value');
     const now = Date.now();
-    if (last.val() && now - last.val() < 10000) { console.log('Debounced for', order.location); return; }
-    await admin.database().ref('_fcm/' + debounceKey).set(now);
+    const debounced = await admin.database().ref('_fcm/' + debounceKey).transaction(function(current) {
+      if (current && now - current < 15000) { return; }
+      return now;
+    });
+    if (!debounced.committed) { console.log('Debounced for', order.location); return; }
 
     const tokensSnap = await admin.database().ref('fcmTokens').once('value');
     const tokensMap = tokensSnap.val();
@@ -27,21 +29,25 @@ exports.sendOrderNotification = onValueWritten(
     console.log('Valid tokens:', tokens.length);
     if (!tokens.length) return;
 
-    const payload = {
+    const result = await admin.messaging().sendEachForMulticast({
+      tokens: tokens,
       notification: {
         title: 'Comanda noua',
-        body: order.location + ' a trimis o comanda!',
-        icon: '/icon-192.png'
+        body: order.location + ' a trimis o comanda!'
+      },
+      webpush: {
+        notification: { icon: '/icon-192.png' }
       }
-    };
-
-    const result = await admin.messaging().sendEachForMulticast({ tokens, ...payload });
+    });
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);
 
     if (result.failureCount > 0) {
       result.responses.forEach((resp, i) => {
-        if (resp.error && (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered')) {
-          admin.database().ref('fcmTokens/' + tokens[i]).remove();
+        if (resp.error) {
+          console.log('FCM error for token', i, ':', resp.error.code, resp.error.message);
+          if (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered') {
+            admin.database().ref('fcmTokens/' + tokens[i]).remove();
+          }
         }
       });
     }
