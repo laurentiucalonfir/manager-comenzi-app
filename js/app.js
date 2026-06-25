@@ -373,13 +373,13 @@ function doLogin() {
     if (firebaseReady) {
       firebase.database().ref('orders').on('value', function(snap) {
         const val = snap.val();
-        if (!val) { _lastCentralizatorOrderCount = 0; return; }
         const cutoff = Date.now() - 24 * 60 * 60 * 1000;
         let count = 0;
-        Object.values(val).forEach(function(o) {
-          if (o && o.timestamp && o.timestamp >= cutoff) count++;
-        });
-        if (count === 0) { _lastCentralizatorOrderCount = 0; return; }
+        if (val) {
+          Object.values(val).forEach(function(o) {
+            if (o && o.timestamp && o.timestamp >= cutoff) count++;
+          });
+        }
         if (_initialCount) {
           _initialCount = false;
           _lastCentralizatorOrderCount = count;
