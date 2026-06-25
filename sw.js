@@ -1,4 +1,4 @@
-const CACHE = 'comenzi-wa-v70';
+const CACHE = 'comenzi-wa-v71';
 const ASSETS = [
   './manifest.json',
   './css/style.css',

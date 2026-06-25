@@ -5,5 +5,8 @@ git add -A
 git commit -m "update"
 git push
 echo.
+echo Deploy spre Firebase...
+call firebase deploy
+echo.
 echo Deploy efectuat!
 pause
