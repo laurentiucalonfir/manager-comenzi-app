@@ -715,7 +715,7 @@ async function trimiteComanda() {
   try { await Sync.saveHistory(history); } catch (e) {}
   // push notification via ntfy.sh (free)
   try {
-    fetch('https://ntfy.sh/corina-caffe', {
+    fetch('https://ntfy.sh/comenzi-corina-caffe', {
       method: 'POST', body: currentUser.location + ' a trimis o comandă!',
       headers: { 'Title': 'Comandă nouă', 'Priority': '3', 'Tags': 'shopping_cart' }
     }).catch(function(){});
