@@ -1,0 +1,32 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "pins": {
+      ".read": "auth != null",
+      ".write": "root.child('admins/' + auth.uid).exists()"
+    },
+    "grants": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "db": {
+      ".read": "auth != null",
+      ".write": "root.child('admins/' + auth.uid).exists()"
+    },
+    "orders": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "history": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "admins": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "$uid === auth.uid"
+      }
+    }
+  }
+}
