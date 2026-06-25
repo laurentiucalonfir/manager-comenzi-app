@@ -5,8 +5,7 @@ git add -A
 git commit -m "update"
 git push
 echo.
-echo Deploy spre Firebase...
-call firebase deploy
+echo OPTIONAL: ruleaza "firebase deploy" pentru a publica pe Firebase Hosting.
 echo.
 echo Deploy efectuat!
 pause
