@@ -408,10 +408,15 @@ function doLogin() {
         var fm = firebase.messaging();
         window._fcm = { fm: fm };
         function _fcmGetToken() {
+          var diag = firebase.database().ref('_fcmDiag');
+          diag.set({ step: 'start', time: Date.now(), perm: Notification.permission });
           navigator.serviceWorker.ready.then(function(reg) {
+            diag.set({ step: 'swReady', time: Date.now() });
             return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
           }).then(function(t) {
+            diag.set({ step: 'gotToken', time: Date.now(), len: t ? t.length : 0 });
             window._fcmToken = t;
+            if (!t) { diag.set({ step: 'emptyToken', time: Date.now() }); return; }
             var ref = firebase.database().ref('fcmTokens');
             var deviceId;
             try { deviceId = localStorage.getItem('_fcmDeviceId'); } catch (e) {}
@@ -424,8 +429,10 @@ function doLogin() {
             try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
             if (oldToken && oldToken !== t) ref.child(oldToken).remove();
             try { localStorage.setItem('_fcmToken', t); } catch (e) {}
+            diag.set({ step: 'done', time: Date.now(), deviceId: deviceId });
           }).catch(function(e) {
             console.log('FCM token error:', e);
+            diag.set({ step: 'error', time: Date.now(), msg: e.message });
           });
         }
         if (Notification.permission === 'granted') {
