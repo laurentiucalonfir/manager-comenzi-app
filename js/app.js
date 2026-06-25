@@ -183,6 +183,17 @@ async function initApp() {
     if (currentUser && currentUser.isAdmin) {
       const view = document.getElementById('view-centralizator');
       if (view.classList.contains('active')) renderCentralizator();
+      // in-app notification for new orders (toast + badge)
+      var orders = Sync.getOrders();
+      var mxt = 0;
+      Object.values(orders).forEach(function(o) { if (o && o.timestamp && o.timestamp > mxt) mxt = o.timestamp; });
+      if (typeof window.__adminNotifTs === 'undefined') { window.__adminNotifTs = mxt; return; }
+      if (mxt > window.__adminNotifTs) {
+        window.__adminNotifTs = mxt;
+        var b = document.getElementById('centralizatorBadge');
+        if (b) b.style.display = 'inline-block';
+        showToast('Comandă nouă!');
+      }
     }
   });
 
@@ -367,33 +378,7 @@ function doLogin() {
   initDropdowns();
   renderProducts();
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
-  if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
-    window._centralizatorListenerRegistered = true;
-    if (firebaseReady) {
-      var _lastMaxTs = 0;
-      var _tsReady = false;
-      firebase.database().ref('orders').on('value', function(snap) {
-        const val = snap.val();
-        var maxTs = 0;
-        if (val) {
-          Object.values(val).forEach(function(o) {
-            if (o && o.timestamp && o.timestamp > maxTs) maxTs = o.timestamp;
-          });
-        }
-        if (!_tsReady) {
-          _tsReady = true;
-          _lastMaxTs = maxTs;
-          return;
-        }
-        if (maxTs > _lastMaxTs) {
-          _lastMaxTs = maxTs;
-          var badge = document.getElementById('centralizatorBadge');
-          if (badge) badge.style.display = 'inline-block';
-          showToast('🔔 Comandă nouă!');
-        }
-      });
-    }
-  }
+  if (currentUser.isAdmin) window.__adminNotifTs = Date.now();
   saveSession();
 }
 
@@ -403,7 +388,6 @@ function doLogout(force) {
   cart = {};
   lastResults = [];
   _lastCentralizatorOrderCount = -1;
-  window._centralizatorListenerRegistered = false;
   localStorage.removeItem('sess_user');
   localStorage.removeItem('sess_cart');
   document.getElementById('app').style.display = 'none';
@@ -720,8 +704,10 @@ async function trimiteComanda() {
     _x.setRequestHeader('Title', 'Comandă nouă');
     _x.setRequestHeader('Priority', '3');
     _x.setRequestHeader('Tags', 'shopping_cart');
+    _x.onerror = function(){ console.log('ntfy XHR error'); };
     _x.send(currentUser.location + ' a trimis o comandă!');
-  } catch(e){}
+    console.log('ntfy POST sent');
+  } catch(e){ console.log('ntfy exception:', e); }
   cart = {}; updateBadge(); renderProducts();
   renderResults(lastResults);
   switchTab('results');
@@ -1172,6 +1158,21 @@ async function adminSaveSupplierContact() {
     showToast('Contact salvat! ✓');
   } catch (e) {
     showToast('Eroare Firebase: ' + e.message, true);
+  }
+}
+
+function adminTestNtfy() {
+  try {
+    var _x = new XMLHttpRequest();
+    _x.open('POST', 'https://ntfy.sh/comenzi-corina-caffe', true);
+    _x.setRequestHeader('Title', 'Test notificare');
+    _x.setRequestHeader('Priority', '3');
+    _x.setRequestHeader('Tags', 'white_check_mark');
+    _x.onloadend = function() { showToast(_x.status === 200 ? 'Notificare trimisă! ✓' : 'Eroare: ' + _x.status); };
+    _x.onerror = function() { showToast('Eroare rețea la ntfy', true); };
+    _x.send('Test de la admin – notificările funcționează! ✅');
+  } catch(e) {
+    showToast('Eroare: ' + e.message, true);
   }
 }
 
