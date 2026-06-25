@@ -715,10 +715,12 @@ async function trimiteComanda() {
   try { await Sync.saveHistory(history); } catch (e) {}
   // push notification via ntfy.sh (free)
   try {
-    fetch('https://ntfy.sh/comenzi-corina-caffe', {
-      method: 'POST', body: currentUser.location + ' a trimis o comandă!',
-      headers: { 'Title': 'Comandă nouă', 'Priority': '3', 'Tags': 'shopping_cart' }
-    }).catch(function(){});
+    var _x = new XMLHttpRequest();
+    _x.open('POST', 'https://ntfy.sh/comenzi-corina-caffe', true);
+    _x.setRequestHeader('Title', 'Comandă nouă');
+    _x.setRequestHeader('Priority', '3');
+    _x.setRequestHeader('Tags', 'shopping_cart');
+    _x.send(currentUser.location + ' a trimis o comandă!');
   } catch(e){}
   cart = {}; updateBadge(); renderProducts();
   renderResults(lastResults);
