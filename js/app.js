@@ -370,6 +370,7 @@ function doLogin() {
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
     if (firebaseReady) {
+      console.log('[notif] registering listener');
       var _lastMaxTs = 0;
       firebase.database().ref('orders').on('value', function(snap) {
         const val = snap.val();
@@ -379,12 +380,15 @@ function doLogin() {
             if (o && o.timestamp && o.timestamp > maxTs) maxTs = o.timestamp;
           });
         }
+        console.log('[notif] maxTs=' + maxTs + ' _lastMaxTs=' + _lastMaxTs);
         if (_lastMaxTs === 0) {
           _lastMaxTs = maxTs;
+          console.log('[notif] initialized');
           return;
         }
         if (maxTs > _lastMaxTs) {
           _lastMaxTs = maxTs;
+          console.log('[notif] WOULD NOTIFY: maxTs > last');
           const tab = document.getElementById('centralizatorTab');
           const badge = document.getElementById('centralizatorBadge');
           if (badge && tab && !tab.classList.contains('active')) {
@@ -393,6 +397,8 @@ function doLogin() {
           showToast('🔔 Comandă nouă!');
         }
       });
+    } else {
+      console.log('[notif] firebaseReady is false');
     }
   }
   saveSession();
