@@ -404,7 +404,10 @@ function doLogin() {
     window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
     // FCM: request token for push notifications
     try {
+      var d = firebase.database().ref('_fcmDiag');
+      d.set({ step: '0_check', isAdmin: true, hasMsg: !!firebase.messaging, hasNotif: typeof Notification !== 'undefined', perm: typeof Notification !== 'undefined' ? Notification.permission : 'N/A', time: Date.now() });
       if (firebase.messaging && typeof Notification !== 'undefined') {
+        d.set({ step: '0b_passed', time: Date.now() });
         var fm = firebase.messaging();
         window._fcm = { fm: fm };
         function _fcmGetToken() {
