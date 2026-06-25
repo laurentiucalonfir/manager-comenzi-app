@@ -291,8 +291,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=119"></script>
-  <script src="js/app.js?v=119"></script>
+<script src="js/sync.js?v=120"></script>
+  <script src="js/app.js?v=120"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -306,15 +306,19 @@
 })();
 </script>
 <script>
-const APP_VER = '119';
+const APP_VER = '120';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
   function swSaveAndReload() {
     try {
       if (typeof currentUser !== 'undefined' && currentUser) {
-        sessionStorage.setItem('sess_user', JSON.stringify(currentUser));
-        sessionStorage.setItem('sess_cart', JSON.stringify(cart));
+        var s = JSON.stringify(currentUser);
+        sessionStorage.setItem('sess_user', s);
+        localStorage.setItem('sess_user', s);
+        s = JSON.stringify(cart);
+        sessionStorage.setItem('sess_cart', s);
+        localStorage.setItem('sess_cart', s);
       }
     } catch (e) {}
     window.location.reload();

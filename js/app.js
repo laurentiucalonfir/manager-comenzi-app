@@ -87,10 +87,16 @@ function toggleEmailLogin() {
 // ── SESSION ──
 function saveSession() {
   try {
-    localStorage.setItem('sess_user', JSON.stringify(currentUser));
-    localStorage.setItem('sess_cart', JSON.stringify(cart));
+    var s = JSON.stringify(currentUser);
+    localStorage.setItem('sess_user', s);
+    sessionStorage.setItem('sess_user', s);
+    s = JSON.stringify(cart);
+    localStorage.setItem('sess_cart', s);
+    sessionStorage.setItem('sess_cart', s);
   } catch (e) {}
 }
+window.addEventListener('visibilitychange', function() { if (currentUser && document.visibilityState === 'hidden') saveSession(); });
+window.addEventListener('pagehide', function() { if (currentUser) saveSession(); });
 
 // ── VISIBILITY CHECK (phone wakeup) ──
 function fbReadWithTimeout(path, timeoutMs = 10000) {
@@ -216,11 +222,14 @@ async function initApp() {
       if (view.classList.contains('active')) renderHistory();
     }
   });
-  const savedUser = localStorage.getItem('sess_user');
+  var savedUser = localStorage.getItem('sess_user');
+  if (!savedUser || savedUser === 'null') {
+    savedUser = sessionStorage.getItem('sess_user');
+  }
   if (savedUser && savedUser !== 'null') {
     try {
       currentUser = JSON.parse(savedUser);
-      cart = JSON.parse(localStorage.getItem('sess_cart') || '{}');
+      cart = JSON.parse(sessionStorage.getItem('sess_cart') || localStorage.getItem('sess_cart') || '{}');
       doLogin();
       updateBadge();
       return;
@@ -447,7 +456,7 @@ function initDropdowns() {
 
   if (currentUser.isAdmin) {
     const locSet = new Set();
-    suppliers.forEach(s => DB[s].locations.forEach(l => locSet.add(l.name)));
+    suppliers.forEach(s => { if (DB[s] && Array.isArray(DB[s].locations)) { DB[s].locations.forEach(l => locSet.add(l.name)); } });
     const locationSel = document.getElementById('locationSelect');
     locationSel.innerHTML = '<option value="">— Toate locațiile —</option>';
     [...locSet].sort().forEach(l => {
@@ -512,8 +521,8 @@ function renderProducts() {
   const suppliers = supplierF ? [supplierF] : Object.keys(DB);
   suppliers.forEach(supplier => {
     const data = DB[supplier];
-    if (!currentUser.isAdmin && !data.locations.find(l => l.name === currentUser.location)) return;
-    if (currentUser.isAdmin && activeLoc && !data.locations.find(l => l.name === activeLoc)) return;
+    if (!currentUser.isAdmin && (!data.locations || !data.locations.find(l => l.name === currentUser.location))) return;
+    if (currentUser.isAdmin && activeLoc && (!data.locations || !data.locations.find(l => l.name === activeLoc))) return;
 
     let prods = [...data.products].sort((a, b) => a.produs.localeCompare(b.produs, 'ro'));
     if (!showAll) prods = prods.filter(p => p.afiseaza === 'da');
@@ -587,7 +596,7 @@ function setQty(supplier, prod, qty) {
   qty = Math.max(0, qty);
   if (qty === 0) { delete cart[key]; }
   else {
-    const locEntry = DB[supplier].locations.find(l => l.name === loc);
+    const locEntry = DB[supplier] && Array.isArray(DB[supplier].locations) ? DB[supplier].locations.find(l => l.name === loc) : null;
     cart[key] = { qty, supplier, produs: prod.produs, tip_ambalaj: prod.tip_ambalaj, location: loc, col: locEntry ? locEntry.col : null, rowIndex: DB[supplier].products.findIndex(p => p.produs === prod.produs) };
   }
   updateBadge();
@@ -768,7 +777,7 @@ function adminRenderGrants() {
   const DB = Sync.getDB();
   const el = document.getElementById('adminGrantList');
   const allLocs = new Set();
-  Object.values(DB).forEach(d => d.locations.forEach(l => allLocs.add(l.name)));
+  Object.values(DB).forEach(d => { if (d && Array.isArray(d.locations)) { d.locations.forEach(l => allLocs.add(l.name)); } });
   el.innerHTML = '';
   if (!allLocs.size) {
     el.innerHTML = '<div style="color:var(--text-muted);font-size:0.82rem;padding:8px 0">Nu există locații în DB.</div>';
@@ -936,8 +945,10 @@ function adminRenderSuppliers() {
   suppliers.forEach(function(s) {
     const div = document.createElement('div');
     div.className = 'admin-prod-item';
-    const cnt = DB[s].products ? DB[s].products.length : 0;
-    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
+    const data = DB[s] || {};
+    const cnt = Array.isArray(data.products) ? data.products.length : 0;
+    const hasLocs = Array.isArray(data.locations);
+    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse' + (hasLocs ? ', ' + data.locations.length + ' locații' : ', 0 locații') + '</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
     list.appendChild(div);
   });
 }
@@ -1092,7 +1103,7 @@ async function adminDeleteGlobalLoc(name, count) {
   if (!confirm(`Ștergi „${name}” din toți cei ${count} furnizori?`)) return;
   const DB = Sync.getDB();
   Object.keys(DB).forEach(supplier => {
-    DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name);
+    if (DB[supplier] && Array.isArray(DB[supplier].locations)) { DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name); }
   });
   try {
     const ok = await Sync.saveDB(DB);
@@ -1114,7 +1125,7 @@ function adminRenderLocations() {
   const supplier = sel.value;
   const list = document.getElementById('adminLocationList');
   if (!supplier || !DB[supplier]) { list.innerHTML = '<div style="color:var(--text-muted);padding:12px;font-size:0.82rem">Selectează un furnizor</div>'; return; }
-  const locs = DB[supplier].locations;
+  const locs = DB[supplier].locations || [];
   list.innerHTML = '';
   locs.forEach((loc, i) => {
     const row = document.createElement('div'); row.className = 'pin-row';
@@ -1131,7 +1142,7 @@ function adminPopulateLocDropdown() {
   const sel = document.getElementById('addLocSelect');
   const cur = sel.value;
   const names = new Set();
-  Object.values(DB).forEach(d => d.locations.forEach(l => names.add(l.name)));
+  Object.values(DB).forEach(d => { if (d && Array.isArray(d.locations)) { d.locations.forEach(l => names.add(l.name)); } });
   sel.innerHTML = '<option value="">— Selectează gestiune —</option>';
   [...names].sort((a, b) => a.localeCompare(b, 'ro')).forEach(n => {
     const o = document.createElement('option');
