@@ -12,6 +12,8 @@ let firebaseReady = false;
 let authReady = false;
 let authUser = null;
 
+const FIREBASE_VAPID_KEY = 'BJ-N9dCKkIwneqqey0tBXjExLUt9MHQbkLdQyiJ_LtnSocjMnjIPso94zFsrz6TOINGgZFRbnI3I_PYRTMx9Ts8';
+
 function initFirebase() {
   if (typeof firebase === 'undefined') return;
   if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') return;

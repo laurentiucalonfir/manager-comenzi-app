@@ -205,7 +205,7 @@ async function initApp() {
         }
       });
       _fmOnMsg.onTokenRefresh(function() {
-        _fmOnMsg.getToken().then(function(t) {
+        _fmOnMsg.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
           if (window._fcmToken) firebase.database().ref('fcmTokens/' + window._fcmToken).remove();
           window._fcmToken = t;
           firebase.database().ref('fcmTokens/' + t).set(true);
@@ -402,7 +402,7 @@ function doLogin() {
       if (firebase.messaging) {
         var fm = firebase.messaging();
         fm.requestPermission().then(function() {
-          return fm.getToken();
+          return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY });
         }).then(function(t) {
           window._fcmToken = t;
           firebase.database().ref('fcmTokens/' + t).set(true);
