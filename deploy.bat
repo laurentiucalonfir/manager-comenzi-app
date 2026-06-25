@@ -1,4 +1,5 @@
 @echo off
+SET PATH=%PATH%;C:\Program Files\nodejs;%APPDATA%\npm
 powershell -ExecutionPolicy Bypass -File "%~dp0bump-version.ps1"
 if %errorlevel% neq 0 pause & exit /b %errorlevel%
 git add -A
@@ -9,7 +10,7 @@ where /q firebase && (
   echo Deploy pe Firebase Hosting...
   firebase deploy
 ) || (
-  echo Firebase CLI negasit. Instaleaza Node.js si ruleaza: npm install -g firebase-tools
+  echo Firebase CLI negasit. ruleaza: npm install -g firebase-tools
 )
 echo.
 echo Deploy efectuat!
