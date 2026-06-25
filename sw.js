@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v104';
+const CACHE = 'comenzi-wa-v105';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=104',
-  './js/app.js?v=104'
+  './js/sync.js?v=105',
+  './js/app.js?v=105'
 ];
 
 self.addEventListener('install', e => {
@@ -16,14 +16,6 @@ self.addEventListener('install', e => {
 
 self.addEventListener('message', e => {
   if (e.data && e.data.action === 'skipWaiting') self.skipWaiting();
-  if (e.data && e.data.action === 'showNotification') {
-    self.registration.showNotification(e.data.title || 'Comandă nouă', {
-      body: e.data.body || 'O comandă nouă a fost trimisă!',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      vibrate: [200, 100, 200]
-    });
-  }
 });
 
 self.addEventListener('notificationclick', e => {

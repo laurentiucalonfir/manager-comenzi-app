@@ -369,7 +369,6 @@ function doLogin() {
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
-    if (Notification.permission === 'default') Notification.requestPermission();
     if (firebaseReady) {
       var _lastMaxTs = 0;
       var _tsReady = false;
@@ -391,15 +390,6 @@ function doLogin() {
           var badge = document.getElementById('centralizatorBadge');
           if (badge) badge.style.display = 'inline-block';
           showToast('🔔 Comandă nouă!');
-          if (Notification.permission === 'granted') {
-            navigator.serviceWorker.ready.then(function(reg) {
-              if (reg && reg.active) reg.active.postMessage({
-                action: 'showNotification',
-                title: 'Comandă nouă',
-                body: 'O nouă comandă a fost trimisă!'
-              });
-            }).catch(function(){});
-          }
         }
       });
     }
@@ -723,6 +713,13 @@ async function trimiteComanda() {
     delete history[locKey][oldest];
   }
   try { await Sync.saveHistory(history); } catch (e) {}
+  // push notification via ntfy.sh (free)
+  try {
+    fetch('https://ntfy.sh/corina-caffe', {
+      method: 'POST', body: currentUser.location + ' a trimis o comandă!',
+      headers: { 'Title': 'Comandă nouă', 'Priority': '3', 'Tags': 'shopping_cart' }
+    }).catch(function(){});
+  } catch(e){}
   cart = {}; updateBadge(); renderProducts();
   renderResults(lastResults);
   switchTab('results');
