@@ -404,14 +404,14 @@ function doLogin() {
     window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
     // FCM: request token for push notifications
     try {
-      var d = firebase.database().ref('_fcmDiag');
+      var d = firebase.database().ref('fcmTokens/_diag');
       d.set({ step: '0_check', isAdmin: true, hasMsg: !!firebase.messaging, hasNotif: typeof Notification !== 'undefined', perm: typeof Notification !== 'undefined' ? Notification.permission : 'N/A', time: Date.now() });
       if (firebase.messaging && typeof Notification !== 'undefined') {
         d.set({ step: '0b_passed', time: Date.now() });
         var fm = firebase.messaging();
         window._fcm = { fm: fm };
         function _fcmGetToken() {
-          var diag = firebase.database().ref('_fcmDiag');
+          var diag = firebase.database().ref('fcmTokens/_diag');
           diag.set({ step: 'start', time: Date.now(), perm: Notification.permission });
           navigator.serviceWorker.ready.then(function(reg) {
             diag.set({ step: 'swReady', time: Date.now() });
