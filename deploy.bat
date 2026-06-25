@@ -5,7 +5,12 @@ git add -A
 git commit -m "update"
 git push
 echo.
-echo OPTIONAL: ruleaza "firebase deploy" pentru a publica pe Firebase Hosting.
+where /q firebase && (
+  echo Deploy pe Firebase Hosting...
+  firebase deploy
+) || (
+  echo Firebase CLI negasit. Instaleaza Node.js si ruleaza: npm install -g firebase-tools
+)
 echo.
 echo Deploy efectuat!
 pause
