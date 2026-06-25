@@ -373,7 +373,6 @@ function doLogin() {
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
       const valid = Object.values(orders).filter(o => o.timestamp && o.timestamp >= cutoff);
       const count = valid.length;
-      if (count === 0) return;
       if (_lastCentralizatorOrderCount >= 0 && count > _lastCentralizatorOrderCount) {
         const newCount = count - _lastCentralizatorOrderCount;
         const tab = document.getElementById('centralizatorTab');
