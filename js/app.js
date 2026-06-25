@@ -701,11 +701,11 @@ async function trimiteComanda() {
   try {
     var _x = new XMLHttpRequest();
     _x.open('POST', 'https://ntfy.sh/comenzi-corina-caffe', true);
-    _x.setRequestHeader('Title', 'Comandă nouă');
+    _x.setRequestHeader('Title', 'Comanda noua');
     _x.setRequestHeader('Priority', '3');
     _x.setRequestHeader('Tags', 'shopping_cart');
     _x.onerror = function(){ console.log('ntfy XHR error'); };
-    _x.send(currentUser.location + ' a trimis o comandă!');
+    _x.send(currentUser.location + ' a trimis o comanda!');
     console.log('ntfy POST sent');
   } catch(e){ console.log('ntfy exception:', e); }
   cart = {}; updateBadge(); renderProducts();
@@ -1168,9 +1168,9 @@ function adminTestNtfy() {
     _x.setRequestHeader('Title', 'Test notificare');
     _x.setRequestHeader('Priority', '3');
     _x.setRequestHeader('Tags', 'white_check_mark');
-    _x.onloadend = function() { showToast(_x.status === 200 ? 'Notificare trimisă! ✓' : 'Eroare: ' + _x.status); };
-    _x.onerror = function() { showToast('Eroare rețea la ntfy', true); };
-    _x.send('Test de la admin – notificările funcționează! ✅');
+    _x.onloadend = function() { showToast(_x.status === 200 ? 'Notificare trimisa! ✓' : 'Eroare: ' + _x.status); };
+    _x.onerror = function() { showToast('Eroare retea la ntfy', true); };
+    _x.send('Test de la admin - notificarile functioneaza!');
   } catch(e) {
     showToast('Eroare: ' + e.message, true);
   }
