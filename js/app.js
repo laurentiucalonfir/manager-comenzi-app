@@ -183,19 +183,36 @@ async function initApp() {
     if (currentUser && currentUser.isAdmin) {
       const view = document.getElementById('view-centralizator');
       if (view.classList.contains('active')) renderCentralizator();
-      // in-app notification for new orders (toast + badge)
-      var orders = Sync.getOrders();
-      var mxt = 0;
-      Object.values(orders).forEach(function(o) { if (o && o.timestamp && o.timestamp > mxt) mxt = o.timestamp; });
-      if (typeof window.__adminNotifTs === 'undefined') { window.__adminNotifTs = mxt; return; }
-      if (mxt > window.__adminNotifTs) {
-        window.__adminNotifTs = mxt;
+      const orders = Sync.getOrders();
+      const cnt = Object.keys(orders).length;
+      if (typeof window._adminOrderCnt !== 'undefined' && cnt > window._adminOrderCnt) {
         var b = document.getElementById('centralizatorBadge');
         if (b) b.style.display = 'inline-block';
         showToast('Comandă nouă!');
       }
+      window._adminOrderCnt = cnt;
     }
   });
+
+  // FCM foreground message handler (backup in-app notification)
+  try {
+    if (firebase.messaging) {
+      var _fmOnMsg = firebase.messaging();
+      _fmOnMsg.onMessage(function() {
+        if (currentUser && currentUser.isAdmin) {
+          var b = document.getElementById('centralizatorBadge');
+          if (b) b.style.display = 'inline-block';
+        }
+      });
+      _fmOnMsg.onTokenRefresh(function() {
+        _fmOnMsg.getToken().then(function(t) {
+          if (window._fcmToken) firebase.database().ref('fcmTokens/' + window._fcmToken).remove();
+          window._fcmToken = t;
+          firebase.database().ref('fcmTokens/' + t).set(true);
+        }).catch(function(){});
+      });
+    }
+  } catch(e) { console.log('FCM onMessage error:', e); }
 
   Sync.onHistoryChange(() => {
     if (currentUser) {
@@ -378,7 +395,24 @@ function doLogin() {
   initDropdowns();
   renderProducts();
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
-  if (currentUser.isAdmin) window.__adminNotifTs = Date.now();
+  if (currentUser.isAdmin) {
+    window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
+    // FCM: request token for push notifications
+    try {
+      if (firebase.messaging) {
+        var fm = firebase.messaging();
+        fm.requestPermission().then(function() {
+          return fm.getToken();
+        }).then(function(t) {
+          window._fcmToken = t;
+          firebase.database().ref('fcmTokens/' + t).set(true);
+          console.log('FCM token stored');
+        }).catch(function(e) {
+          console.log('FCM token error:', e.message);
+        });
+      }
+    } catch(e) { console.log('FCM init error:', e); }
+  }
   saveSession();
 }
 
@@ -697,17 +731,6 @@ async function trimiteComanda() {
     delete history[locKey][oldest];
   }
   try { await Sync.saveHistory(history); } catch (e) {}
-  // push notification via ntfy.sh (free)
-  try {
-    var _x = new XMLHttpRequest();
-    _x.open('POST', 'https://ntfy.sh/comenzi-corina-caffe', true);
-    _x.setRequestHeader('Title', 'Comanda noua');
-    _x.setRequestHeader('Priority', '3');
-    _x.setRequestHeader('Tags', 'shopping_cart');
-    _x.onerror = function(){ console.log('ntfy XHR error'); };
-    _x.send(currentUser.location + ' a trimis o comanda!');
-    console.log('ntfy POST sent');
-  } catch(e){ console.log('ntfy exception:', e); }
   cart = {}; updateBadge(); renderProducts();
   renderResults(lastResults);
   switchTab('results');
@@ -1161,19 +1184,8 @@ async function adminSaveSupplierContact() {
   }
 }
 
-function adminTestNtfy() {
-  try {
-    var _x = new XMLHttpRequest();
-    _x.open('POST', 'https://ntfy.sh/comenzi-corina-caffe', true);
-    _x.setRequestHeader('Title', 'Test notificare');
-    _x.setRequestHeader('Priority', '3');
-    _x.setRequestHeader('Tags', 'white_check_mark');
-    _x.onloadend = function() { showToast(_x.status === 200 ? 'Notificare trimisa! ✓' : 'Eroare: ' + _x.status); };
-    _x.onerror = function() { showToast('Eroare retea la ntfy', true); };
-    _x.send('Test de la admin - notificarile functioneaza!');
-  } catch(e) {
-    showToast('Eroare: ' + e.message, true);
-  }
+function adminTestFcm() {
+  showToast('FCM test: trimite o comanda de pe un location');
 }
 
 // ── CENTRALIZATOR ──

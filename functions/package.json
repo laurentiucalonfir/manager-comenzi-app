@@ -1,0 +1,11 @@
+{
+  "name": "comenzi-corina-functions",
+  "version": "1.0.0",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^7.2.5"
+  }
+}

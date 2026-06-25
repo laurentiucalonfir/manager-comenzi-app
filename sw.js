@@ -1,12 +1,33 @@
-const CACHE = 'comenzi-wa-v109';
+const CACHE = 'comenzi-wa-v110';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=109',
-  './js/app.js?v=109'
+  './js/sync.js?v=110',
+  './js/app.js?v=110'
 ];
+
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: 'AIzaSyA1gDoHZVARzLSR7EjOdMj2BVXkXD_LkS0',
+  authDomain: 'comenzi-corina-caffe.firebaseapp.com',
+  databaseURL: 'https://comenzi-corina-caffe-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'comenzi-corina-caffe',
+  storageBucket: 'comenzi-corina-caffe.firebasestorage.app',
+  messagingSenderId: '820994532115',
+  appId: '1:820994532115:web:f5a13771b57ec0a27530e6'
+});
+
+const fbMessaging = firebase.messaging();
+
+fbMessaging.onBackgroundMessage(function(payload) {
+  var title = payload.notification.title || 'Comanda noua';
+  var opts = { body: payload.notification.body || '', icon: './icon-192.png' };
+  self.registration.showNotification(title, opts);
+});
 
 self.addEventListener('install', e => {
   e.waitUntil(
