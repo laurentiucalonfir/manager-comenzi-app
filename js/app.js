@@ -369,21 +369,34 @@ function doLogin() {
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
-    Sync.onOrdersChange(function(orders) {
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const valid = Object.values(orders).filter(o => o.timestamp && o.timestamp >= cutoff);
-      const count = valid.length;
-      if (_lastCentralizatorOrderCount >= 0 && count > _lastCentralizatorOrderCount) {
-        const newCount = count - _lastCentralizatorOrderCount;
-        const tab = document.getElementById('centralizatorTab');
-        const badge = document.getElementById('centralizatorBadge');
-        if (badge && tab && !tab.classList.contains('active')) {
-          badge.style.display = 'inline-block';
+    let _initialCount = true;
+    if (firebaseReady) {
+      firebase.database().ref('orders').on('value', function(snap) {
+        const val = snap.val();
+        if (!val) { _lastCentralizatorOrderCount = 0; return; }
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        let count = 0;
+        Object.values(val).forEach(function(o) {
+          if (o && o.timestamp && o.timestamp >= cutoff) count++;
+        });
+        if (count === 0) { _lastCentralizatorOrderCount = 0; return; }
+        if (_initialCount) {
+          _initialCount = false;
+          _lastCentralizatorOrderCount = count;
+          return;
         }
-        showToast(`🔔 ${newCount} comandă${newCount > 1 ? 'ă' : ''} nouă!`);
-      }
-      _lastCentralizatorOrderCount = count;
-    });
+        if (count > _lastCentralizatorOrderCount) {
+          const newCount = count - _lastCentralizatorOrderCount;
+          const tab = document.getElementById('centralizatorTab');
+          const badge = document.getElementById('centralizatorBadge');
+          if (badge && tab && !tab.classList.contains('active')) {
+            badge.style.display = 'inline-block';
+          }
+          showToast(`🔔 ${newCount} comandă${newCount > 1 ? 'ă' : ''} nouă!`);
+        }
+        _lastCentralizatorOrderCount = count;
+      });
+    }
   }
   saveSession();
 }
