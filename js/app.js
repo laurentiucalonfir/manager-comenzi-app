@@ -420,7 +420,6 @@ function doLogin() {
               try { localStorage.setItem('_fcmDeviceId', deviceId); } catch (e) {}
             }
             ref.child(deviceId).set(t);
-            // clean up old-format {token: true} entries
             var oldToken;
             try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
             if (oldToken && oldToken !== t) ref.child(oldToken).remove();
@@ -429,7 +428,11 @@ function doLogin() {
             console.log('FCM token error:', e);
           });
         }
-        if (Notification.permission === 'granted') _fcmGetToken();
+        if (Notification.permission === 'granted') {
+          _fcmGetToken();
+        } else if (Notification.permission === 'default') {
+          Notification.requestPermission().then(function(p) { if (p === 'granted') _fcmGetToken(); });
+        }
         window._fcm.getToken = _fcmGetToken;
         // foreground notification
         try { fm.onMessage(function(payload) {
