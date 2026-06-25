@@ -6,19 +6,22 @@ exports.sendOrderNotification = onValueCreated(
   { ref: '/orders/{orderId}', region: 'europe-west1' },
   async (event) => {
     const order = event.data.val();
-    if (!order || !order.location) return;
+    console.log('Function triggered, order:', order ? order.location + '/' + order.supplier : 'null');
+    if (!order || !order.location) { console.log('No order or location'); return; }
 
     const debounceKey = 'debounce_' + order.location;
     const last = await admin.database().ref('_fcm/' + debounceKey).once('value');
     const now = Date.now();
-    if (last.val() && now - last.val() < 10000) return;
+    if (last.val() && now - last.val() < 10000) { console.log('Debounced for', order.location); return; }
     await admin.database().ref('_fcm/' + debounceKey).set(now);
 
     const tokensSnap = await admin.database().ref('fcmTokens').once('value');
     const tokensMap = tokensSnap.val();
+    console.log('FCM tokens map:', tokensMap ? Object.keys(tokensMap).length : 'null');
     if (!tokensMap) return;
 
     const tokens = Object.keys(tokensMap).filter(t => typeof t === 'string' && t.length > 20);
+    console.log('Valid tokens:', tokens.length);
     if (!tokens.length) return;
 
     const payload = {

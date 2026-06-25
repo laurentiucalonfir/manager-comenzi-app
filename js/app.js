@@ -204,13 +204,6 @@ async function initApp() {
           if (b) b.style.display = 'inline-block';
         }
       });
-      _fmOnMsg.onTokenRefresh(function() {
-        _fmOnMsg.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
-          if (window._fcmToken) firebase.database().ref('fcmTokens/' + window._fcmToken).remove();
-          window._fcmToken = t;
-          firebase.database().ref('fcmTokens/' + t).set(true);
-        }).catch(function(){});
-      });
     }
   } catch(e) { console.log('FCM onMessage error:', e); }
 
