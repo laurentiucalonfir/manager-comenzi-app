@@ -369,8 +369,8 @@ function doLogin() {
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
-    let _initialCount = true;
     if (firebaseReady) {
+      var _orderListenerInitialized = false;
       firebase.database().ref('orders').on('value', function(snap) {
         const val = snap.val();
         const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -380,11 +380,13 @@ function doLogin() {
             if (o && o.timestamp && o.timestamp >= cutoff) count++;
           });
         }
-        if (_initialCount) {
-          _initialCount = false;
+        if (!_orderListenerInitialized) {
+          _orderListenerInitialized = true;
           _lastCentralizatorOrderCount = count;
+          console.log('[notif] init count=' + count);
           return;
         }
+        console.log('[notif] count=' + count + ' last=' + _lastCentralizatorOrderCount + ' diff=' + (count - _lastCentralizatorOrderCount));
         if (count > _lastCentralizatorOrderCount) {
           const newCount = count - _lastCentralizatorOrderCount;
           const tab = document.getElementById('centralizatorTab');
@@ -393,6 +395,7 @@ function doLogin() {
             badge.style.display = 'inline-block';
           }
           showToast(`🔔 ${newCount} comandă${newCount > 1 ? 'ă' : ''} nouă!`);
+          console.log('[notif] SHOWING toast + badge');
         }
         _lastCentralizatorOrderCount = count;
       });
