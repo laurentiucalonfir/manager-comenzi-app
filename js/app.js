@@ -372,6 +372,7 @@ function doLogin() {
     if (Notification.permission === 'default') Notification.requestPermission();
     if (firebaseReady) {
       var _lastMaxTs = 0;
+      var _tsReady = false;
       firebase.database().ref('orders').on('value', function(snap) {
         const val = snap.val();
         var maxTs = 0;
@@ -380,7 +381,8 @@ function doLogin() {
             if (o && o.timestamp && o.timestamp > maxTs) maxTs = o.timestamp;
           });
         }
-        if (_lastMaxTs === 0) {
+        if (!_tsReady) {
+          _tsReady = true;
           _lastMaxTs = maxTs;
           return;
         }
@@ -389,12 +391,14 @@ function doLogin() {
           var badge = document.getElementById('centralizatorBadge');
           if (badge) badge.style.display = 'inline-block';
           showToast('🔔 Comandă nouă!');
-          if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({
-              action: 'showNotification',
-              title: 'Comandă nouă',
-              body: 'O nouă comandă a fost trimisă!'
-            });
+          if (Notification.permission === 'granted') {
+            navigator.serviceWorker.ready.then(function(reg) {
+              if (reg && reg.active) reg.active.postMessage({
+                action: 'showNotification',
+                title: 'Comandă nouă',
+                body: 'O nouă comandă a fost trimisă!'
+              });
+            }).catch(function(){});
           }
         }
       });
