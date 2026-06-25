@@ -27,6 +27,10 @@
       "$uid": {
         ".write": "$uid === auth.uid"
       }
+    },
+    "fcmTokens": {
+      ".read": "auth != null",
+      ".write": "auth != null"
     }
   }
 }

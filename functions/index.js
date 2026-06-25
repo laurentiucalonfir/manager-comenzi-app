@@ -5,11 +5,12 @@ admin.initializeApp();
 exports.sendOrderNotification = onValueWritten(
   { ref: '/orders/{orderId}', region: 'europe-west1' },
   async (event) => {
-    // Only notify on new entries (not updates)
-    if (event.data.before.val()) { return; }
     const order = event.data.after.val();
     console.log('Function triggered, order:', order ? order.location + '/' + order.supplier : 'null');
     if (!order || !order.location) { console.log('No order or location'); return; }
+
+    // Skip old orders (from bulk sync) — only notify orders newer than 60s
+    if (order.timestamp && Date.now() - order.timestamp > 60000) { console.log('Old order, skip'); return; }
 
     const debounceKey = 'debounce_' + order.location;
     const last = await admin.database().ref('_fcm/' + debounceKey).once('value');

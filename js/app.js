@@ -188,6 +188,7 @@ async function initApp() {
       if (typeof window._adminOrderCnt !== 'undefined' && cnt > window._adminOrderCnt) {
         var b = document.getElementById('centralizatorBadge');
         if (b) b.style.display = 'inline-block';
+        if (navigator.setAppBadge) navigator.setAppBadge(cnt - window._adminOrderCnt);
         showToast('Comandă nouă!');
       }
       window._adminOrderCnt = cnt;
@@ -202,6 +203,7 @@ async function initApp() {
         if (currentUser && currentUser.isAdmin) {
           var b = document.getElementById('centralizatorBadge');
           if (b) b.style.display = 'inline-block';
+          if (navigator.setAppBadge) navigator.setAppBadge(1);
         }
       });
     }
@@ -394,15 +396,21 @@ function doLogin() {
     try {
       if (firebase.messaging) {
         var fm = firebase.messaging();
-        fm.requestPermission().then(function() {
-          return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY });
-        }).then(function(t) {
-          window._fcmToken = t;
-          firebase.database().ref('fcmTokens/' + t).set(true);
-          console.log('FCM token stored');
-        }).catch(function(e) {
-          console.log('FCM token error:', e.message);
-        });
+        var doFCM = function() {
+          fm.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
+            window._fcmToken = t;
+            firebase.database().ref('fcmTokens/' + t).set(true);
+          }).catch(function(e) {
+            console.log('FCM token error:', e.message);
+          });
+        };
+        if (Notification.permission === 'granted') {
+          doFCM();
+        } else if (Notification.permission !== 'denied') {
+          // Defer request to first user tap (user gesture required by mobile browsers)
+          var _fcmOnClick = function() { document.removeEventListener('click', _fcmOnClick); fm.requestPermission().then(function(g) { if (g === 'granted') doFCM(); }).catch(function() {}); };
+          document.addEventListener('click', _fcmOnClick);
+        }
       }
     } catch(e) { console.log('FCM init error:', e); }
   }
@@ -1188,6 +1196,10 @@ const _sentCentralizatorSuppliers = new Set();
 function renderCentralizator() {
   const el = document.getElementById('centralizatorList');
   const raw = Sync.getOrders() || {};
+  // clear badge when admin views orders
+  var b = document.getElementById('centralizatorBadge');
+  if (b) b.style.display = 'none';
+  if (navigator.clearAppBadge) navigator.clearAppBadge();
 
   // cleanup orders older than 24h
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;

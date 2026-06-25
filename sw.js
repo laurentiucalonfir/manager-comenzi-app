@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v113';
+const CACHE = 'comenzi-wa-v114';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=113',
-  './js/app.js?v=113'
+  './js/sync.js?v=114',
+  './js/app.js?v=114'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -27,6 +27,7 @@ fbMessaging.onBackgroundMessage(function(payload) {
   var title = payload.notification.title || 'Comanda noua';
   var opts = { body: payload.notification.body || '', icon: './icon-192.png' };
   self.registration.showNotification(title, opts);
+  if (navigator.setAppBadge) navigator.setAppBadge(1);
 });
 
 self.addEventListener('install', e => {
