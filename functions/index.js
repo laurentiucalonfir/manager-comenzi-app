@@ -31,12 +31,10 @@ exports.sendOrderNotification = onValueWritten(
 
     const result = await admin.messaging().sendEachForMulticast({
       tokens: tokens,
-      notification: {
+      data: {
         title: 'Comanda noua',
-        body: order.location + ' a trimis o comanda!'
-      },
-      webpush: {
-        notification: { icon: '/icon-192.png' }
+        body: order.location + ' a trimis o comanda!',
+        icon: '/icon-192.png'
       }
     });
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);
