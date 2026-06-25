@@ -55,7 +55,7 @@
     <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
     <div class="header-right">
       <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
-      <button class="btn-icon btn-logout" id="headerLogoutBtn" onclick="doLogout()">⏏</button>
+      <button class="btn-icon btn-logout" onclick="doLogout()">⏏</button>
     </div>
   </div>
 
@@ -64,7 +64,7 @@
     <div class="tab" onclick="switchTab('cart')" data-tab="cart">🛒 Coș</div>
     <div class="tab" onclick="switchTab('results')" data-tab="results">📤 Mesaje</div>
     <div class="tab" onclick="switchTab('history')" data-tab="history">📜 Istoric</div>
-    <div class="tab" id="centralizatorTab" onclick="switchTab('centralizator')" data-tab="centralizator" style="display:none">📊 Centralizator</div>
+    <div class="tab" id="centralizatorTab" onclick="switchTab('centralizator')" data-tab="centralizator" style="display:none">📊 Centralizator<span class="tab-badge" id="centralizatorBadge" style="display:none">!</span></div>
     <div class="tab" id="adminTab" onclick="switchTab('admin')" data-tab="admin" style="display:none">⚙️ Admin</div>
   </div>
 
@@ -224,7 +224,9 @@
           </div>
         </div>
         <div id="adminPhoneList"></div>
-        <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="margin-top:8px">💾 Salvează contact</button>
+        <div class="row2" style="margin-top:8px">
+          <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="flex:1">💾 Salvează contact</button>
+        </div>
       </div>
       <div class="admin-section">
         <h3>Gestiuni</h3>
@@ -264,9 +266,6 @@
 
 </div>
 
-
-</div>
-
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay" style="display:none">
   <div class="spinner"></div>
@@ -280,9 +279,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=77"></script>
-  <script src="js/app.js?v=77"></script>
+<script src="js/sync.js?v=113"></script>
+  <script src="js/app.js?v=113"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -296,7 +296,7 @@
 })();
 </script>
 <script>
-const APP_VER = '90';
+const APP_VER = '113';
 if ('serviceWorker' in navigator) {
   let reg = null;
 

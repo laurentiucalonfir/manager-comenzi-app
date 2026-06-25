@@ -3,6 +3,7 @@ let currentUser = null;
 let cart = {};
 let lastResults = [];
 let _authResolve = null;
+let _lastCentralizatorOrderCount = -1;
 
 function waitForAuth() {
   if (_authResolve) return _authResolve;
@@ -13,9 +14,9 @@ function waitForAuth() {
       setTimeout(checkAuth, 100);
     }
     checkAuth();
-    // timeout 15s — dacă nu apare auth, continuă oricum
-    setTimeout(function() { resolve(null); }, 15000);
   });
+  // timeout 15s — dacă nu apare auth, continuă oricum
+  setTimeout(function() { if (_authResolve) { _authResolve = null; resolve(null); } }, 15000);
   return _authResolve;
 }
 
@@ -117,25 +118,15 @@ document.addEventListener('visibilitychange', () => {
 
 // ── STORAGE SYNC (cross-tab) ──
 window.addEventListener('storage', e => {
-  if (e.key === 'promenada_grants') {
-    if (currentUser && !currentUser.isAdmin) {
-      try {
-        const grants = JSON.parse(e.newValue);
-        const g = grants[currentUser.location];
-        if (!g || !g.granted) {
-          showToast('Accesul tău a fost revocat!', true);
-          doLogout(true);
-        }
-      } catch (e) {}
-    }
-    if (currentUser && currentUser.isAdmin && e.newValue) {
-      try {
-        const grants = JSON.parse(e.newValue);
-        Sync._grants = grants;
-        Sync._localGrantsHash = JSON.stringify(grants);
-        adminRenderGrants();
-      } catch (e) {}
-    }
+  if (e.key === 'promenada_grants' && currentUser && !currentUser.isAdmin) {
+    try {
+      const grants = JSON.parse(e.newValue);
+      const g = grants[currentUser.location];
+      if (!g || !g.granted) {
+        showToast('Accesul tău a fost revocat!', true);
+        doLogout(true);
+      }
+    } catch (e) {}
   }
 });
 
@@ -164,50 +155,16 @@ async function initApp() {
 
   // Poll grants from Firebase every 5s (catches cross-device revoke even if on() listener fails)
   setInterval(() => {
-    if (!currentUser || !firebaseReady) return;
-    if (!currentUser.isAdmin) {
-      const sanitizedKey = Sync._sanitizeFirebaseKey(currentUser.location);
-      fbReadWithTimeout('grants/' + sanitizedKey, 10000).then(snap => {
-        const val = snap.val();
-        if (!val || !val.granted) {
-          showToast('Accesul tău a fost revocat!', true);
-          doLogout(true);
-        }
-      }).catch(() => {});
-    } else {
-      fbReadWithTimeout('grants', 10000).then(snap => {
-        const val = snap.val();
-        if (!val) return;
-        const desanitized = {};
-        for (const [k, v] of Object.entries(val)) {
-          desanitized[Sync._desanitizeFirebaseKey(k)] = v;
-        }
-        const hash = JSON.stringify(desanitized);
-        if (hash !== Sync._localGrantsHash) {
-          Sync._grants = desanitized;
-          localStorage.setItem('promenada_grants', JSON.stringify(Sync._grants));
-          Sync._localGrantsHash = hash;
-          adminRenderGrants();
-        }
-      }).catch(() => {});
-    }
-  }, 5000);
-
-  // LocalStorage polling for admin (works across tabs even without Firebase or storage event)
-  setInterval(() => {
-    if (!currentUser || !currentUser.isAdmin) return;
-    try {
-      var ls = localStorage.getItem('promenada_grants');
-      if (!ls) return;
-      var localParsed = JSON.parse(ls);
-      var localStr = JSON.stringify(localParsed);
-      if (localStr !== Sync._localGrantsHash) {
-        Sync._grants = localParsed;
-        Sync._localGrantsHash = localStr;
-        adminRenderGrants();
+    if (!currentUser || currentUser.isAdmin || !firebaseReady) return;
+    const sanitizedKey = Sync._sanitizeFirebaseKey(currentUser.location);
+    fbReadWithTimeout('grants/' + sanitizedKey, 10000).then(snap => {
+      const val = snap.val();
+      if (!val || !val.granted) {
+        showToast('Accesul tău a fost revocat!', true);
+        doLogout(true);
       }
-    } catch (e) {}
-  }, 1500);
+    }).catch(() => {});
+  }, 5000);
 
   Sync.onGrantsChange((grants) => {
     if (!currentUser) return;
@@ -226,8 +183,29 @@ async function initApp() {
     if (currentUser && currentUser.isAdmin) {
       const view = document.getElementById('view-centralizator');
       if (view.classList.contains('active')) renderCentralizator();
+      const orders = Sync.getOrders();
+      const cnt = Object.keys(orders).length;
+      if (typeof window._adminOrderCnt !== 'undefined' && cnt > window._adminOrderCnt) {
+        var b = document.getElementById('centralizatorBadge');
+        if (b) b.style.display = 'inline-block';
+        showToast('Comandă nouă!');
+      }
+      window._adminOrderCnt = cnt;
     }
   });
+
+  // FCM foreground message handler (backup in-app notification)
+  try {
+    if (firebase.messaging) {
+      var _fmOnMsg = firebase.messaging();
+      _fmOnMsg.onMessage(function() {
+        if (currentUser && currentUser.isAdmin) {
+          var b = document.getElementById('centralizatorBadge');
+          if (b) b.style.display = 'inline-block';
+        }
+      });
+    }
+  } catch(e) { console.log('FCM onMessage error:', e); }
 
   Sync.onHistoryChange(() => {
     if (currentUser) {
@@ -401,9 +379,6 @@ function doLogin() {
 
   document.getElementById('headerLoc').textContent = currentUser.isAdmin ? 'Admin' : currentUser.location;
 
-  const logoutBtn = document.getElementById('headerLogoutBtn');
-  if (logoutBtn) logoutBtn.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
-
   if (currentUser.isAdmin) {
     document.getElementById('adminTab').style.display = '';
     document.getElementById('centralizatorTab').style.display = '';
@@ -413,37 +388,40 @@ function doLogin() {
   initDropdowns();
   renderProducts();
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
+  if (currentUser.isAdmin) {
+    window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
+    // FCM: request token for push notifications
+    try {
+      if (firebase.messaging) {
+        var fm = firebase.messaging();
+        fm.requestPermission().then(function() {
+          return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY });
+        }).then(function(t) {
+          window._fcmToken = t;
+          firebase.database().ref('fcmTokens/' + t).set(true);
+          console.log('FCM token stored');
+        }).catch(function(e) {
+          console.log('FCM token error:', e.message);
+        });
+      }
+    } catch(e) { console.log('FCM init error:', e); }
+  }
   saveSession();
 }
 
-async function doLogout(force) {
+function doLogout(force) {
   if (!force && !confirm('Deconectare?')) return;
-  if (!force && currentUser && currentUser.location) {
-    const grants = Sync.getGrants();
-    delete grants[currentUser.location];
-    try { await Sync.saveGrants(grants); } catch (e) {}
-    // force re-read from local storage to ensure in-memory state is clean
-    try {
-      const saved = localStorage.getItem('promenada_grants');
-      Sync._grants = saved ? JSON.parse(saved) : {};
-      Sync._localGrantsHash = JSON.stringify(Sync._grants);
-    } catch (e) {}
-  }
   currentUser = null;
   cart = {};
   lastResults = [];
+  _lastCentralizatorOrderCount = -1;
   localStorage.removeItem('sess_user');
   localStorage.removeItem('sess_cart');
-  if (firebase.auth().currentUser && !firebase.auth().currentUser.isAnonymous) {
-    try { firebase.auth().signOut(); } catch (e) {}
-  }
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminTab').style.display = 'none';
   document.getElementById('centralizatorTab').style.display = 'none';
   document.getElementById('adminLocRow').classList.remove('visible');
-  const headerLogoutBtn = document.getElementById('headerLogoutBtn');
-  if (headerLogoutBtn) headerLogoutBtn.style.display = 'none';
   switchTab('order');
   updateBadge();
 }
@@ -798,8 +776,7 @@ function adminRenderGrants() {
     const status = granted ? '<span class="grant-status on" title="Acces activ">✓</span>' : '<span class="grant-status off" title="Fără acces">✕</span>';
     let codeDisplay = '';
     if (hasCode) codeDisplay = `<span class="grant-code">Cod: <strong>${g.code}</strong></span>`;
-    const loggedOutStr = g && g.loggedOutAt ? '<span class="grant-logged-out">(s-a delogat)</span>' : '';
-    row.innerHTML = `${status}<span class="grant-loc">${escHtml(loc)}</span>${loggedOutStr}
+    row.innerHTML = `${status}<span class="grant-loc">${escHtml(loc)}</span>
       <input class="grant-pin" type="text" maxlength="6" inputmode="numeric" value="${currentPin}" data-loc="${loc}" onchange="adminSetPin(this)" placeholder="PIN">
       ${codeDisplay}<span style="flex:1"></span>`;
     if (granted) {
@@ -1200,6 +1177,10 @@ async function adminSaveSupplierContact() {
   }
 }
 
+function adminTestFcm() {
+  showToast('FCM test: trimite o comanda de pe un location');
+}
+
 // ── CENTRALIZATOR ──
 const _expandedCentralizator = new Set();
 const _sentCentralizatorSuppliers = new Set();
@@ -1465,9 +1446,9 @@ function switchTab(tab) {
   const tabEl = document.querySelector(`[data-tab="${tab}"]`);
   if (tabEl) tabEl.classList.add('active');
   if (tab === 'cart') renderCart();
-  if (tab === 'admin') { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
+  if (tab === 'admin') { adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
   if (tab === 'results') renderResults(lastResults);
-  if (tab === 'centralizator') renderCentralizator();
+  if (tab === 'centralizator') { renderCentralizator(); document.getElementById('centralizatorBadge').style.display = 'none'; }
   if (tab === 'history') renderHistory();
 }
 

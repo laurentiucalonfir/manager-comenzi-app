@@ -4,30 +4,25 @@ const Sync = {
   _grants: null,
   _orders: {},
   _history: {},
-  _emails: {},
   _dbListeners: [],
   _pinsListeners: [],
   _grantsListeners: [],
   _ordersListeners: [],
   _historyListeners: [],
-  _emailsListeners: [],
   _localDBHash: '',
   _localPinsHash: '',
   _localGrantsHash: '',
   _localOrdersHash: '',
   _localHistoryHash: '',
-  _localEmailsHash: '',
   _unsubDB: null,
   _unsubPins: null,
   _unsubGrants: null,
   _unsubOrders: null,
   _unsubHistory: null,
-  _unsubEmails: null,
   initialized: false,
   connected: false,
   _grantsSyncResolve: null,
   grantsSync: null,
-  _pendingGrantsHash: null,
 
   async init() {
     this._loadLocal();
@@ -73,13 +68,6 @@ const Sync = {
       this._grants = {};
     }
     try {
-      const saved = localStorage.getItem('promenada_emails');
-      let parsed = saved ? JSON.parse(saved) : null;
-      this._emails = parsed || {};
-    } catch {
-      this._emails = {};
-    }
-    try {
       const saved = localStorage.getItem('promenada_orders');
       let parsed = saved ? JSON.parse(saved) : null;
       this._orders = parsed || {};
@@ -119,7 +107,6 @@ const Sync = {
     localStorage.setItem('promenada_grants', JSON.stringify(this._grants));
     localStorage.setItem('promenada_orders', JSON.stringify(this._orders));
     localStorage.setItem('promenada_history', JSON.stringify(this._history));
-    localStorage.setItem('promenada_emails', JSON.stringify(this._emails));
     this._updateHashes();
   },
 
@@ -129,7 +116,6 @@ const Sync = {
     this._localGrantsHash = JSON.stringify(this._grants);
     this._localOrdersHash = JSON.stringify(this._orders);
     this._localHistoryHash = JSON.stringify(this._history);
-    this._localEmailsHash = JSON.stringify(this._emails);
   },
 
   _listenFirebase() {
@@ -142,7 +128,7 @@ const Sync = {
       const hash = JSON.stringify(val);
       if (hash === this._localDBHash) return;
       this._db = val;
-      localStorage.setItem('promenada_db', JSON.stringify(this._db));
+      localStorage.setItem('promenada_db', hash);
       this._localDBHash = hash;
       this._notifyDBListeners();
     });
@@ -174,8 +160,7 @@ const Sync = {
           desanitized[this._desanitizeFirebaseKey(k)] = v;
         }
         const hash = JSON.stringify(desanitized);
-        console.log('📡 grants hash:', hash, 'match:', hash === this._localGrantsHash, 'pending:', hash === this._pendingGrantsHash);
-        if (hash === this._pendingGrantsHash) return;
+        console.log('📡 grants hash:', hash, 'match:', hash === this._localGrantsHash);
         if (hash !== this._localGrantsHash) {
           this._grants = desanitized;
           localStorage.setItem('promenada_grants', JSON.stringify(this._grants));
@@ -204,7 +189,7 @@ const Sync = {
       const hash = JSON.stringify(desanitized);
       if (hash === this._localOrdersHash) return;
       this._orders = desanitized;
-      localStorage.setItem('promenada_orders', JSON.stringify(this._orders));
+      localStorage.setItem('promenada_orders', hash);
       this._localOrdersHash = hash;
       this._notifyOrdersListeners();
     });
@@ -216,20 +201,9 @@ const Sync = {
       const hash = JSON.stringify(desanitized);
       if (hash === this._localHistoryHash) return;
       this._history = desanitized;
-      localStorage.setItem('promenada_history', JSON.stringify(this._history));
+      localStorage.setItem('promenada_history', hash);
       this._localHistoryHash = hash;
-    this._notifyHistoryListeners();
-    this._notifyEmailsListeners();
-    });
-    this._unsubEmails = rootRef.child('emails').on('value', snap => {
-      const val = snap.val();
-      if (!val) return;
-      const hash = JSON.stringify(val);
-      if (hash === this._localEmailsHash) return;
-      this._emails = val;
-      localStorage.setItem('promenada_emails', JSON.stringify(this._emails));
-      this._localEmailsHash = hash;
-      this._notifyEmailsListeners();
+      this._notifyHistoryListeners();
     });
   },
 
@@ -291,8 +265,6 @@ const Sync = {
   },
 
   onHistoryChange(fn) { this._historyListeners.push(fn); },
-
-  onEmailsChange(fn) { this._emailsListeners.push(fn); },
   _sanitizeOrderKey(k) { return this._sanitizeFirebaseKey(k); },
   _desanitizeOrderKey(k) { return this._desanitizeFirebaseKey(k); },
 
@@ -343,31 +315,10 @@ const Sync = {
 
   getGrants() { return this._grants || {}; },
 
-  getEmails() { return this._emails || {}; },
-
-  async saveEmails(data) {
-    this._emails = data;
-    this._saveLocal();
-    if (!firebaseReady) return false;
-    try {
-      const sanitized = {};
-      for (const [k, v] of Object.entries(data)) {
-        const sk = this._sanitizeFirebaseKey(k);
-        if (sk) sanitized[sk] = v;
-      }
-      await firebase.database().ref('emails').set(sanitized);
-      return true;
-    } catch (e) {
-      console.warn('Firebase save error (emails):', e);
-      throw e;
-    }
-  },
-
   async saveGrants(data) {
-    this._pendingGrantsHash = this._localGrantsHash;
     this._grants = data;
     this._saveLocal();
-    if (!firebaseReady) { this._pendingGrantsHash = null; return false; }
+    if (!firebaseReady) return false;
     try {
       const sanitized = {};
       for (const [k, v] of Object.entries(data)) {
@@ -379,8 +330,6 @@ const Sync = {
     } catch (e) {
       console.warn('Firebase save error (grants):', e);
       throw e;
-    } finally {
-      setTimeout(() => { this._pendingGrantsHash = null; }, 60000);
     }
   },
 
@@ -434,10 +383,6 @@ const Sync = {
 
   _notifyHistoryListeners() {
     this._historyListeners.forEach(fn => { try { fn(this._history); } catch (e) { console.warn(e); } });
-  },
-
-  _notifyEmailsListeners() {
-    this._emailsListeners.forEach(fn => { try { fn(this._emails); } catch (e) { console.warn(e); } });
   }
 };
 
