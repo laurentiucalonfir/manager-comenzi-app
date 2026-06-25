@@ -597,7 +597,7 @@ function setQty(supplier, prod, qty) {
   if (qty === 0) { delete cart[key]; }
   else {
     const locEntry = DB[supplier] && Array.isArray(DB[supplier].locations) ? DB[supplier].locations.find(l => l.name === loc) : null;
-    cart[key] = { qty, supplier, produs: prod.produs, tip_ambalaj: prod.tip_ambalaj, location: loc, col: locEntry ? locEntry.col : null, rowIndex: DB[supplier].products.findIndex(p => p.produs === prod.produs) };
+    cart[key] = { qty, supplier, produs: prod.produs, tip_ambalaj: prod.tip_ambalaj, location: loc, col: locEntry ? locEntry.col : null, rowIndex: Array.isArray(DB[supplier].products) ? DB[supplier].products.findIndex(p => p.produs === prod.produs) : -1 };
   }
   updateBadge();
   renderProducts();
@@ -996,7 +996,7 @@ function adminRenderProducts() {
   const supplier = sel.value;
   const list = document.getElementById('adminProductList');
   if (!supplier || !DB[supplier]) { list.innerHTML = '<div style="color:var(--text-muted);padding:12px;font-size:0.82rem">Selectează un furnizor</div>'; return; }
-  const prods = DB[supplier].products;
+  const prods = DB[supplier].products || [];
   list.innerHTML = '';
   const header = document.createElement('div');
   header.className = 'admin-supplier-header';
@@ -1017,10 +1017,11 @@ async function adminAddProduct() {
   if (!supplier) { showToast('Selectează un furnizor!', true); return; }
   const name = document.getElementById('newProdName').value.trim();
   if (!name) { showToast('Introdu numele produsului!', true); return; }
-  if (DB[supplier].products.some(p => p.produs.toLowerCase() === name.toLowerCase())) { showToast('Produsul există deja!', true); return; }
+  if (DB[supplier].products && DB[supplier].products.some(p => p.produs.toLowerCase() === name.toLowerCase())) { showToast('Produsul există deja!', true); return; }
   const tip = document.getElementById('newProdTip').value;
   const ambalaj = parseInt(document.getElementById('newProdAmbalaj').value) || 1;
   const afiseaza = document.getElementById('newProdAfiseaza').checked ? 'da' : 'nu';
+  if (!Array.isArray(DB[supplier].products)) DB[supplier].products = [];
   DB[supplier].products.push({ produs: name, afiseaza, ambalaj, tip_ambalaj: tip });
   try {
     const ok = await Sync.saveDB(DB);
@@ -1037,6 +1038,7 @@ async function adminAddProduct() {
 async function adminDeleteProduct(supplier, produs) {
   const DB = Sync.getDB();
   if (!confirm(`Ștergi „${produs}” de la ${supplier}?`)) return;
+  if (!Array.isArray(DB[supplier].products)) return;
   DB[supplier].products = DB[supplier].products.filter(p => p.produs !== produs);
   try {
     const ok = await Sync.saveDB(DB);
@@ -1074,7 +1076,7 @@ async function adminSaveEditProduct() {
   const tip = document.getElementById('editProdTip').value;
   const ambalaj = parseInt(document.getElementById('editProdAmbalaj').value) || 1;
   const afiseaza = document.getElementById('editProdAfiseaza').checked ? 'da' : 'nu';
-  const prods = DB[supplier].products;
+  const prods = DB[supplier].products || [];
   const idx = prods.findIndex(p => p.produs === oldName);
   if (idx === -1) return;
   const dup = prods.findIndex(p => p.produs.toLowerCase() === name.toLowerCase() && p.produs !== oldName);
@@ -1128,7 +1130,7 @@ function adminRenderLocations() {
   list.innerHTML = '';
   locs.forEach((loc, i) => {
     const row = document.createElement('div'); row.className = 'pin-row';
-    const count = Object.values(DB).filter(d => d.locations.some(l => l.name === loc.name)).length;
+    const count = Object.values(DB).filter(d => Array.isArray(d.locations) && d.locations.some(l => l.name === loc.name)).length;
     row.innerHTML = `<div class="pin-loc">${escHtml(loc.name)}</div>
       ${count > 1 ? `<span style="font-size:0.65rem;color:var(--text-muted);cursor:pointer;padding:0 6px" onclick="adminDeleteGlobalLoc('${loc.name.replace(/'/g,"\\'")}',${count})" title="Șterge din toți furnizorii">🌐</span>` : ''}
       <button class="btn-del-prod" onclick="adminDeleteLocation('${supplier.replace(/'/g,"\\'")}','${loc.name.replace(/'/g,"\\'")}')" title="Șterge" style="background:none;border:none;color:#e94560;font-size:1.2rem;cursor:pointer;padding:4px 10px">✕</button>`;
@@ -1159,6 +1161,7 @@ async function adminAddLocationSelected() {
   const name = selLoc.value;
   if (!name) { showToast('Selectează o gestiune!', true); return; }
   const DB = Sync.getDB();
+  if (!Array.isArray(DB[supplier].locations)) DB[supplier].locations = [];
   if (DB[supplier].locations.some(l => l.name.toLowerCase() === name.toLowerCase())) { showToast('Gestiunea există deja la acest furnizor!', true); return; }
   const maxCol = DB[supplier].locations.reduce((m, l) => Math.max(m, l.col || 0), 0);
   DB[supplier].locations.push({ name, col: maxCol + 1 });
@@ -1182,6 +1185,7 @@ async function adminAddLocation() {
   if (!supplier) { showToast('Selectează un furnizor!', true); return; }
   const name = document.getElementById('newLocName').value.trim();
   if (!name) { showToast('Introdu numele locației!', true); return; }
+  if (!Array.isArray(DB[supplier].locations)) DB[supplier].locations = [];
   if (DB[supplier].locations.some(l => l.name.toLowerCase() === name.toLowerCase())) { showToast('Locația există deja!', true); return; }
   const maxCol = DB[supplier].locations.reduce((m, l) => Math.max(m, l.col || 0), 0);
   DB[supplier].locations.push({ name, col: maxCol + 1 });
@@ -1201,6 +1205,7 @@ async function adminAddLocation() {
 async function adminDeleteLocation(supplier, name) {
   const DB = Sync.getDB();
   if (!confirm(`Ștergi locația „${name}” de la ${supplier}?`)) return;
+  if (!Array.isArray(DB[supplier].locations)) return;
   DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name);
   try {
     const ok = await Sync.saveDB(DB);
