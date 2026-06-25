@@ -524,7 +524,7 @@ function renderProducts() {
     if (!currentUser.isAdmin && (!data.locations || !data.locations.find(l => l.name === currentUser.location))) return;
     if (currentUser.isAdmin && activeLoc && (!data.locations || !data.locations.find(l => l.name === activeLoc))) return;
 
-    let prods = [...data.products].sort((a, b) => a.produs.localeCompare(b.produs, 'ro'));
+    let prods = data.products ? [...data.products].sort((a, b) => a.produs.localeCompare(b.produs, 'ro')) : [];
     if (!showAll) prods = prods.filter(p => p.afiseaza === 'da');
     if (search) prods = prods.filter(p => p.produs.toLowerCase().includes(search));
     if (!prods.length) return;
@@ -947,8 +947,7 @@ function adminRenderSuppliers() {
     div.className = 'admin-prod-item';
     const data = DB[s] || {};
     const cnt = Array.isArray(data.products) ? data.products.length : 0;
-    const hasLocs = Array.isArray(data.locations);
-    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse' + (hasLocs ? ', ' + data.locations.length + ' locații' : ', 0 locații') + '</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
+    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
     list.appendChild(div);
   });
 }
