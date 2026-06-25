@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v102';
+const CACHE = 'comenzi-wa-v103';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=102',
-  './js/app.js?v=102'
+  './js/sync.js?v=103',
+  './js/app.js?v=103'
 ];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,22 @@ self.addEventListener('install', e => {
 
 self.addEventListener('message', e => {
   if (e.data && e.data.action === 'skipWaiting') self.skipWaiting();
+  if (e.data && e.data.action === 'showNotification') {
+    self.registration.showNotification(e.data.title || 'Comandă nouă', {
+      body: e.data.body || 'O comandă nouă a fost trimisă!',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [200, 100, 200]
+    });
+  }
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+    for (var i = 0; i < clientList.length; i++) { if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus(); }
+    if (clients.openWindow) return clients.openWindow('/');
+  }));
 });
 
 self.addEventListener('activate', e => {

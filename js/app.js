@@ -369,6 +369,7 @@ function doLogin() {
   if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
+    if (Notification.permission === 'default') Notification.requestPermission();
     if (firebaseReady) {
       var _lastMaxTs = 0;
       firebase.database().ref('orders').on('value', function(snap) {
@@ -388,6 +389,13 @@ function doLogin() {
           var badge = document.getElementById('centralizatorBadge');
           if (badge) badge.style.display = 'inline-block';
           showToast('🔔 Comandă nouă!');
+          if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              action: 'showNotification',
+              title: 'Comandă nouă',
+              body: 'O nouă comandă a fost trimisă!'
+            });
+          }
         }
       });
     }
