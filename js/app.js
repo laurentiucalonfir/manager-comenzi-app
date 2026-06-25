@@ -130,26 +130,6 @@ window.addEventListener('storage', e => {
   }
 });
 
-function enableFCM() {
-  try {
-    var btn = document.getElementById('fcmBtn');
-    if (btn) btn.style.display = 'none';
-    document.getElementById('fcmStatus').textContent = '⏳ se cere permisiunea...';
-    Notification.requestPermission().then(function(g) {
-      if (g === 'granted') {
-        document.getElementById('fcmStatus').textContent = '✅ Notificări active';
-        if (window._fcm && window._fcm.getToken) window._fcm.getToken();
-      } else {
-        document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
-      }
-    });
-    setTimeout(function() {
-      var s = document.getElementById('fcmStatus');
-      if (s && s.textContent === '⏳ se cere permisiunea...') s.textContent = '⚠️ Nu s-a primit răspuns. Încearcă din nou.';
-    }, 10000);
-  } catch(e) { console.log('enableFCM error:', e); }
-}
-
 // ── INIT ──
 async function initApp() {
   try {
@@ -168,7 +148,7 @@ async function initApp() {
     if (currentUser) {
       initDropdowns();
       renderProducts();
-      if (currentUser.isAdmin) adminRenderProducts();
+      if (currentUser.isAdmin) { adminRenderSuppliers(); adminRenderProducts(); }
       showToast('Produse actualizate de pe alt dispozitiv!');
     }
   });
@@ -225,8 +205,6 @@ async function initApp() {
           var b = document.getElementById('centralizatorBadge');
           if (b) b.style.display = 'inline-block';
           if (navigator.setAppBadge) navigator.setAppBadge(1);
-          var s = document.getElementById('fcmStatus');
-          if (s && s.textContent.indexOf('✅') === -1) s.textContent = '📩 Notificare primită';
         }
       });
     }
@@ -412,7 +390,7 @@ function doLogin() {
 
   initDropdowns();
   renderProducts();
-  if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
+  if (currentUser.isAdmin) { adminRenderSuppliers(); adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin) {
     window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
     // FCM: request token for push notifications
@@ -420,7 +398,6 @@ function doLogin() {
       if (firebase.messaging && typeof Notification !== 'undefined') {
         var fm = firebase.messaging();
         window._fcm = { fm: fm };
-        // Helper: get token using existing service worker
         function _fcmGetToken() {
           navigator.serviceWorker.ready.then(function(reg) {
             return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
@@ -428,18 +405,10 @@ function doLogin() {
             window._fcmToken = t;
             firebase.database().ref('fcmTokens/' + t).set(true);
           }).catch(function(e) {
-            document.getElementById('fcmStatus').textContent = '❌ Eroare: ' + e.message;
+            console.log('FCM token error:', e);
           });
         }
-        if (Notification.permission === 'granted') {
-          document.getElementById('fcmStatus').textContent = '✅ Notificări active';
-          _fcmGetToken();
-        } else if (Notification.permission === 'denied') {
-          document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
-        } else {
-          document.getElementById('fcmStatus').textContent = '🔘 Permisiunea necesară';
-          document.getElementById('fcmBtn').style.display = '';
-        }
+        if (Notification.permission === 'granted') _fcmGetToken();
         window._fcm.getToken = _fcmGetToken;
       }
     } catch(e) { console.log('FCM init error:', e); }
@@ -957,6 +926,59 @@ function adminChangePassword() {
   });
 }
 
+// ── ADMIN SUPPLIERS ──
+function adminRenderSuppliers() {
+  const DB = Sync.getDB();
+  const list = document.getElementById('adminSupplierList');
+  if (!list) return;
+  const suppliers = Object.keys(DB).sort();
+  list.innerHTML = '';
+  suppliers.forEach(function(s) {
+    const div = document.createElement('div');
+    div.className = 'admin-prod-item';
+    const cnt = DB[s].products ? DB[s].products.length : 0;
+    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
+    list.appendChild(div);
+  });
+}
+
+async function adminAddSupplier() {
+  const DB = Sync.getDB();
+  const name = document.getElementById('newSupplierName').value.trim();
+  if (!name) { showToast('Introdu numele furnizorului!', true); return; }
+  if (DB[name]) { showToast('Furnizorul există deja!', true); return; }
+  DB[name] = { locations: [], products: [], phone: '', site: '' };
+  try {
+    const ok = await Sync.saveDB(DB);
+    if (ok === false) { showToast('Firebase neconectat!', true); return; }
+    document.getElementById('newSupplierName').value = '';
+    adminRenderSuppliers();
+    initDropdowns();
+    renderProducts();
+    showToast('Furnizor adăugat! ✓');
+  } catch (e) { showToast('Eroare Firebase: ' + e.message, true); }
+}
+
+async function adminDeleteSupplier(name) {
+  if (!confirm('Ștergi furnizorul „' + name + '” și toate produsele sale?')) return;
+  const DB = Sync.getDB();
+  delete DB[name];
+  try {
+    const ok = await Sync.saveDB(DB);
+    if (ok === false) { showToast('Firebase neconectat!', true); return; }
+    adminRenderSuppliers();
+    var s = document.getElementById('adminProdSupplier'); if (s) s.value = '';
+    adminRenderProducts();
+    s = document.getElementById('adminPhoneSupplier'); if (s) s.value = '';
+    adminRenderSupplierContact();
+    s = document.getElementById('adminLocSupplier'); if (s) s.value = '';
+    adminRenderLocations();
+    initDropdowns();
+    renderProducts();
+    showToast('Furnizor șters! ✓');
+  } catch (e) { showToast('Eroare Firebase: ' + e.message, true); }
+}
+
 // ── ADMIN PRODUCTS ──
 function adminRenderProducts() {
   const DB = Sync.getDB();
@@ -1213,10 +1235,6 @@ async function adminSaveSupplierContact() {
   } catch (e) {
     showToast('Eroare Firebase: ' + e.message, true);
   }
-}
-
-function adminTestFcm() {
-  showToast('FCM test: trimite o comanda de pe un location');
 }
 
 // ── CENTRALIZATOR ──
