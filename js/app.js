@@ -370,34 +370,28 @@ function doLogin() {
   if (currentUser.isAdmin && !window._centralizatorListenerRegistered) {
     window._centralizatorListenerRegistered = true;
     if (firebaseReady) {
-      var _orderListenerInitialized = false;
+      var _lastMaxTs = 0;
       firebase.database().ref('orders').on('value', function(snap) {
         const val = snap.val();
-        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-        let count = 0;
+        var maxTs = 0;
         if (val) {
           Object.values(val).forEach(function(o) {
-            if (o && o.timestamp && o.timestamp >= cutoff) count++;
+            if (o && o.timestamp && o.timestamp > maxTs) maxTs = o.timestamp;
           });
         }
-        if (!_orderListenerInitialized) {
-          _orderListenerInitialized = true;
-          _lastCentralizatorOrderCount = count;
-          console.log('[notif] init count=' + count);
+        if (_lastMaxTs === 0) {
+          _lastMaxTs = maxTs;
           return;
         }
-        console.log('[notif] count=' + count + ' last=' + _lastCentralizatorOrderCount + ' diff=' + (count - _lastCentralizatorOrderCount));
-        if (count > _lastCentralizatorOrderCount) {
-          const newCount = count - _lastCentralizatorOrderCount;
+        if (maxTs > _lastMaxTs) {
+          _lastMaxTs = maxTs;
           const tab = document.getElementById('centralizatorTab');
           const badge = document.getElementById('centralizatorBadge');
           if (badge && tab && !tab.classList.contains('active')) {
             badge.style.display = 'inline-block';
           }
-          showToast(`🔔 ${newCount} comandă${newCount > 1 ? 'ă' : ''} nouă!`);
-          console.log('[notif] SHOWING toast + badge');
+          showToast('🔔 Comandă nouă!');
         }
-        _lastCentralizatorOrderCount = count;
       });
     }
   }

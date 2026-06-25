@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v99';
+const CACHE = 'comenzi-wa-v100';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=99',
-  './js/app.js?v=99'
+  './js/sync.js?v=100',
+  './js/app.js?v=100'
 ];
 
 self.addEventListener('install', e => {
