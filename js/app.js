@@ -420,12 +420,24 @@ function doLogin() {
               try { localStorage.setItem('_fcmDeviceId', deviceId); } catch (e) {}
             }
             ref.child(deviceId).set(t);
+            // clean up old-format {token: true} entries
+            var oldToken;
+            try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
+            if (oldToken && oldToken !== t) ref.child(oldToken).remove();
+            try { localStorage.setItem('_fcmToken', t); } catch (e) {}
           }).catch(function(e) {
             console.log('FCM token error:', e);
           });
         }
         if (Notification.permission === 'granted') _fcmGetToken();
         window._fcm.getToken = _fcmGetToken;
+        // foreground notification
+        try { fm.onMessage(function(payload) {
+          var d = payload.data || {};
+          if (d.title) { showToast('Notificare: ' + d.title + ' - ' + (d.body || '')); }
+        }); } catch(e) {}
+        // re-register token when refreshed
+        try { fm.onTokenRefresh(function() { _fcmGetToken(); }); } catch(e) {}
       }
     } catch(e) { console.log('FCM init error:', e); }
   }
