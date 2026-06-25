@@ -130,6 +130,24 @@ window.addEventListener('storage', e => {
   }
 });
 
+function enableFCM() {
+  try {
+    if (!window._fcm) return;
+    var btn = document.getElementById('fcmBtn');
+    if (btn) btn.style.display = 'none';
+    document.getElementById('fcmStatus').textContent = '⏳ se cere permisiunea...';
+    window._fcm.fm.requestPermission().then(function(g) {
+      if (g === 'granted') {
+        window._fcm.save();
+      } else {
+        document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
+      }
+    }).catch(function() {
+      document.getElementById('fcmStatus').textContent = '⛔ Eroare permisiune';
+    });
+  } catch(e) { console.log('enableFCM error:', e); }
+}
+
 // ── INIT ──
 async function initApp() {
   try {
@@ -204,6 +222,8 @@ async function initApp() {
           var b = document.getElementById('centralizatorBadge');
           if (b) b.style.display = 'inline-block';
           if (navigator.setAppBadge) navigator.setAppBadge(1);
+          var s = document.getElementById('fcmStatus');
+          if (s && s.textContent.indexOf('✅') === -1) s.textContent = '📩 Notificare primită';
         }
       });
     }
@@ -394,23 +414,26 @@ function doLogin() {
     window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
     // FCM: request token for push notifications
     try {
-      if (firebase.messaging) {
+      if (firebase.messaging && typeof Notification !== 'undefined') {
         var fm = firebase.messaging();
-        var doFCM = function() {
+        function _saveFCM() {
           fm.getToken({ vapidKey: FIREBASE_VAPID_KEY }).then(function(t) {
             window._fcmToken = t;
             firebase.database().ref('fcmTokens/' + t).set(true);
+            document.getElementById('fcmStatus').textContent = '✅ Notificări active';
           }).catch(function(e) {
-            console.log('FCM token error:', e.message);
+            document.getElementById('fcmStatus').textContent = '❌ Eroare: ' + e.message;
           });
-        };
-        if (Notification.permission === 'granted') {
-          doFCM();
-        } else if (Notification.permission !== 'denied') {
-          // Defer request to first user tap (user gesture required by mobile browsers)
-          var _fcmOnClick = function() { document.removeEventListener('click', _fcmOnClick); fm.requestPermission().then(function(g) { if (g === 'granted') doFCM(); }).catch(function() {}); };
-          document.addEventListener('click', _fcmOnClick);
         }
+        if (Notification.permission === 'granted') {
+          _saveFCM();
+        } else if (Notification.permission === 'denied') {
+          document.getElementById('fcmStatus').textContent = '⛔ Notificări blocate';
+        } else {
+          document.getElementById('fcmStatus').textContent = '🔘 Permisiunea necesară';
+          document.getElementById('fcmBtn').style.display = '';
+        }
+        window._fcm = { fm: fm, save: _saveFCM };
       }
     } catch(e) { console.log('FCM init error:', e); }
   }
