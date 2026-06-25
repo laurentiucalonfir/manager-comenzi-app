@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v125';
+const CACHE = 'comenzi-wa-v126';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=125',
-  './js/app.js?v=125'
+  './js/sync.js?v=126',
+  './js/app.js?v=126'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -35,7 +35,7 @@ fbMessaging.onBackgroundMessage(function(payload) {
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(ASSETS))
   );
 });
 
