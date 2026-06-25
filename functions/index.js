@@ -40,7 +40,12 @@ exports.sendOrderNotification = onValueWritten(
 
     const result = await admin.messaging().sendEachForMulticast({
       tokens: tokens,
+      notification: {
+        title: 'Comanda noua',
+        body: order.location + ' a trimis o comanda!'
+      },
       data: {
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
         title: 'Comanda noua',
         body: order.location + ' a trimis o comanda!',
         icon: '/icon-192.png'
