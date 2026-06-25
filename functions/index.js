@@ -15,7 +15,7 @@ exports.sendOrderNotification = onValueWritten(
     const debounceKey = 'debounce_' + order.location;
     const now = Date.now();
     const debounced = await admin.database().ref('_fcm/' + debounceKey).transaction(function(current) {
-      if (current && now - current < 15000) { return; }
+      if (current && now - current < 60000) { return; }
       return now;
     });
     if (!debounced.committed) { console.log('Debounced for', order.location); return; }
@@ -42,14 +42,16 @@ exports.sendOrderNotification = onValueWritten(
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);
 
     if (result.failureCount > 0) {
+      const cleanups = [];
       result.responses.forEach((resp, i) => {
         if (resp.error) {
           console.log('FCM error for token', i, ':', resp.error.code, resp.error.message);
           if (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered') {
-            admin.database().ref('fcmTokens/' + tokens[i]).remove();
+            cleanups.push(admin.database().ref('fcmTokens/' + tokens[i]).remove());
           }
         }
       });
+      await Promise.all(cleanups);
     }
   }
 );
