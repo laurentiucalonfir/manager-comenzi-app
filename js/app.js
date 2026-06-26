@@ -453,6 +453,14 @@ function doLogin() {
         try { fm.onTokenRefresh(function() { _fcmGetToken(); }); } catch(e) {}
       }
     } catch(e) { console.log('FCM init error:', e); }
+    // clear badge on login / focus
+    try { navigator.setAppBadge(0); } catch(e) {}
+    // listen for SW badge updates
+    try { navigator.serviceWorker.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'newOrder') {
+        showToast('Comanda noua: ' + (e.data.body || ''));
+      }
+    }); } catch(e) {}
   }
   saveSession();
 }

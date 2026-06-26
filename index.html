@@ -154,16 +154,6 @@
         </div>
       </div>
       <div class="admin-section">
-        <h3>Furnizori</h3>
-        <div id="adminSupplierList"></div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="search-input" id="newSupplierName" placeholder="Nume furnizor nou" style="flex:1;min-width:140px">
-            <button class="btn-save-pins" onclick="adminAddSupplier()">+ Adaugă</button>
-          </div>
-        </div>
-      </div>
-      <div class="admin-section">
         <h3>Produse</h3>
         <div id="adminProductSection">
           <div class="row2" style="margin-bottom:8px">
@@ -291,8 +281,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=132"></script>
-  <script src="js/app.js?v=132"></script>
+<script src="js/sync.js?v=113"></script>
+  <script src="js/app.js?v=113"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -306,33 +296,59 @@
 })();
 </script>
 <script>
-const APP_VER = '132';
+const APP_VER = '113';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
   function swSaveAndReload() {
     try {
       if (typeof currentUser !== 'undefined' && currentUser) {
-        var s = JSON.stringify(currentUser);
-        sessionStorage.setItem('sess_user', s);
-        localStorage.setItem('sess_user', s);
-        s = JSON.stringify(cart);
-        sessionStorage.setItem('sess_cart', s);
-        localStorage.setItem('sess_cart', s);
+        sessionStorage.setItem('sess_user', JSON.stringify(currentUser));
+        sessionStorage.setItem('sess_cart', JSON.stringify(cart));
       }
     } catch (e) {}
     window.location.reload();
+  }
+
+  function swActivateWaiting() {
+    if (!reg || !reg.waiting) return;
+    reg.waiting.postMessage({ action: 'skipWaiting' });
+  }
+
+  function swCheckUpdate() {
+    if (reg) reg.update();
   }
 
   navigator.serviceWorker.register('sw.js?v=' + APP_VER, {
     updateViaCache: 'none'
   }).then(r => {
     reg = r;
+    r.update();
+
+    if (r.waiting) {
+      swActivateWaiting();
+    }
+
     r.addEventListener('updatefound', () => {
       const sw = r.installing;
-      if (sw) sw.addEventListener('statechange', () => {});
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          swActivateWaiting();
+        }
+      });
     });
   }).catch(() => {});
+
+  navigator.serviceWorker.addEventListener('controllerchange', swSaveAndReload);
+  setInterval(swCheckUpdate, 60000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      swCheckUpdate();
+      setTimeout(swActivateWaiting, 500);
+    }
+  });
 }
 </script>
 </body>

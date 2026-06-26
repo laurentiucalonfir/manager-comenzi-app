@@ -42,13 +42,13 @@ exports.sendOrderNotification = onValueWritten(
       tokens: tokens,
       notification: {
         title: 'Comanda noua',
-        body: order.location + ' a trimis o comanda!'
-      },
-      data: {
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-        title: 'Comanda noua',
         body: order.location + ' a trimis o comanda!',
         icon: '/icon-192.png'
+      },
+      data: {
+        title: 'Comanda noua',
+        body: order.location + ' a trimis o comanda!',
+        click_url: '/'
       }
     });
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);

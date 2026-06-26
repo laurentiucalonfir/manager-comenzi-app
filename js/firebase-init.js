@@ -12,7 +12,6 @@ let firebaseReady = false;
 let authReady = false;
 let authUser = null;
 
-// VAPID key for FCM web push
 const FIREBASE_VAPID_KEY = 'BJ-N9dCKkIwneqqey0tBXjExLUt9MHQbkLdQyiJ_LtnSocjMnjIPso94zFsrz6TOINGgZFRbnI3I_PYRTMx9Ts8';
 
 function initFirebase() {
