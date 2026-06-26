@@ -440,8 +440,6 @@ function doLogin() {
         }
         if (Notification.permission === 'granted') {
           _fcmGetToken();
-        } else if (Notification.permission === 'default') {
-          Notification.requestPermission().then(function(p) { if (p === 'granted') _fcmGetToken(); });
         }
         window._fcm.getToken = _fcmGetToken;
         // foreground notification
@@ -1570,5 +1568,31 @@ function setProgress(p) { document.getElementById('progressFill').style.width=p+
 function setLoadingText(t) { document.getElementById('loadingText').textContent=t; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
 function showToast(msg, err, duration) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast'+(err?' error':'')+' show'; setTimeout(()=>t.className='toast', duration||2500); }
+
+// ── MANUAL NOTIFICATION PERMISSION ──
+function solicitaPermisiuneNotificari() {
+  if (typeof Notification === 'undefined') {
+    showToast('Notificările nu sunt suportate de acest browser / dispozitiv!', true);
+    return;
+  }
+  
+  showToast('Se solicită permisiunea...');
+  Notification.requestPermission().then(function(p) {
+    if (p === 'granted') {
+      showToast('Permisiune acordată! Se înregistrează dispozitivul...');
+      if (window._fcm && typeof window._fcm.getToken === 'function') {
+        window._fcm.getToken();
+      } else {
+        showToast('Eroare: Serviciul de notificări nu este inițializat. Reîncărcați pagina.', true);
+      }
+    } else if (p === 'denied') {
+      showToast('Permisiunea a fost refuzată! Activează notificările din setările telefonului.', true);
+    } else {
+      showToast('Permisiunea nu a fost selectată.', true);
+    }
+  }).catch(function(err) {
+    showToast('Eroare la solicitare: ' + err.message, true);
+  });
+}
 
 initApp();

@@ -42,8 +42,20 @@ exports.sendOrderNotification = onValueWritten(
       tokens: tokens,
       notification: {
         title: 'Comanda noua',
-        body: order.location + ' a trimis o comanda!',
-        icon: '/icon-192.png'
+        body: order.location + ' a trimis o comanda!'
+      },
+      webpush: {
+        notification: {
+          title: 'Comanda noua',
+          body: order.location + ' a trimis o comanda!',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          vibrate: [200, 100, 200],
+          requireInteraction: true,
+          tag: 'order',
+          renotify: true
+        },
+        fcmOptions: { link: '/' }
       },
       data: {
         title: 'Comanda noua',
