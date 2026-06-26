@@ -1556,7 +1556,7 @@ function switchTab(tab) {
   const tabEl = document.querySelector(`[data-tab="${tab}"]`);
   if (tabEl) tabEl.classList.add('active');
   if (tab === 'cart') renderCart();
-  if (tab === 'admin') { adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
+  if (tab === 'admin') { adminRenderSuppliers(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
   if (tab === 'results') renderResults(lastResults);
   if (tab === 'centralizator') { renderCentralizator(); document.getElementById('centralizatorBadge').style.display = 'none'; }
   if (tab === 'history') renderHistory();
@@ -1568,6 +1568,20 @@ function setProgress(p) { document.getElementById('progressFill').style.width=p+
 function setLoadingText(t) { document.getElementById('loadingText').textContent=t; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
 function showToast(msg, err, duration) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast'+(err?' error':'')+' show'; setTimeout(()=>t.className='toast', duration||2500); }
+
+// ── COLLAPSIBLE TOGGLE ──
+function toggleCollapsible(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + 'Arrow');
+  if (!el) return;
+  if (el.style.display === 'none' || el.style.display === '') {
+    el.style.display = 'block';
+    if (arrow) arrow.textContent = '▼';
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.textContent = '▶';
+  }
+}
 
 // ── MANUAL NOTIFICATION PERMISSION ──
 function solicitaPermisiuneNotificari() {
