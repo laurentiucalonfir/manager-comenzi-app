@@ -24,8 +24,9 @@ firebase.initializeApp({
 const fbMessaging = firebase.messaging();
 
 fbMessaging.onBackgroundMessage(function(payload) {
-  var title = payload.notification.title || 'Comanda noua';
-  var opts = { body: payload.notification.body || '', icon: './icon-192.png' };
+  var d = payload.data || {};
+  var title = d.title || 'Comanda noua';
+  var opts = { body: d.body || '', icon: './icon-192.png', data: { url: d.clickUrl || '/' } };
   self.registration.showNotification(title, opts);
 });
 

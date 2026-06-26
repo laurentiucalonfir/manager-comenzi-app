@@ -25,10 +25,11 @@ exports.sendOrderNotification = onValueCreated(
     if (!tokens.length) return;
 
     const payload = {
-      notification: {
+      data: {
         title: 'Comanda noua',
         body: order.location + ' a trimis o comanda!',
-        icon: '/icon-192.png'
+        icon: '/icon-192.png',
+        clickUrl: '/'
       }
     };
 
