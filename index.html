@@ -170,8 +170,11 @@
         </div>
       </div>
       <div class="admin-section">
-        <h3>Produse</h3>
-        <div id="adminProductSection">
+        <h3 onclick="toggleCollapsible('adminProductSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Produse</span>
+          <span id="adminProductSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
+        </h3>
+        <div id="adminProductSection" style="display:none;margin-top:10px">
           <div class="row2" style="margin-bottom:8px">
             <div class="select-wrap">
               <select id="adminProdSupplier" onchange="adminRenderProducts()"></select>
@@ -233,20 +236,28 @@
       </div>
 
       <div class="admin-section">
-        <h3>Contact furnizori</h3>
-        <div class="row2" style="margin-bottom:8px">
-          <div class="select-wrap">
-            <select id="adminPhoneSupplier" onchange="adminRenderSupplierContact()"></select>
+        <h3 onclick="toggleCollapsible('adminPhoneSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Contact furnizori</span>
+          <span id="adminPhoneSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
+        </h3>
+        <div id="adminPhoneSection" style="display:none;margin-top:10px">
+          <div class="row2" style="margin-bottom:8px">
+            <div class="select-wrap">
+              <select id="adminPhoneSupplier" onchange="adminRenderSupplierContact()"></select>
+            </div>
           </div>
-        </div>
-        <div id="adminPhoneList"></div>
-        <div class="row2" style="margin-top:8px">
-          <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="flex:1">💾 Salvează contact</button>
+          <div id="adminPhoneList"></div>
+          <div class="row2" style="margin-top:8px">
+            <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="flex:1">💾 Salvează contact</button>
+          </div>
         </div>
       </div>
       <div class="admin-section">
-        <h3>Gestiuni</h3>
-        <div id="adminLocationSection">
+        <h3 onclick="toggleCollapsible('adminLocationSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Gestiuni</span>
+          <span id="adminLocationSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
+        </h3>
+        <div id="adminLocationSection" style="display:none;margin-top:10px">
           <div class="row2" style="margin-bottom:8px">
             <div class="select-wrap">
               <select id="adminLocSupplier" onchange="adminRenderLocations()"></select>
@@ -267,17 +278,22 @@
         <button class="btn-save-pins" onclick="solicitaPermisiuneNotificari()" style="width:100%;padding:13px;background:var(--green);color:#0a2a28">🔔 Activează notificări pe acest telefon</button>
       </div>
       <div class="admin-section">
-        <h3>Cont curent</h3>
-        <div id="adminEmailDisplay" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px"></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <input class="search-input" id="changeEmailInput" type="email" placeholder="Email nou" style="flex:1;min-width:140px;box-sizing:border-box">
-          <button class="btn-grant-add" onclick="adminChangeEmail()">Schimbă email</button>
+        <h3 onclick="toggleCollapsible('adminAccountSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
+          <span>Cont curent</span>
+          <span id="adminAccountSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
+        </h3>
+        <div id="adminAccountSection" style="display:none;margin-top:10px">
+          <div id="adminEmailDisplay" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <input class="search-input" id="changeEmailInput" type="email" placeholder="Email nou" style="flex:1;min-width:140px;box-sizing:border-box">
+            <button class="btn-grant-add" onclick="adminChangeEmail()">Schimbă email</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <input class="search-input" id="changePassInput" type="password" placeholder="Parolă nouă" style="flex:1;min-width:140px;box-sizing:border-box">
+            <button class="btn-grant-add" onclick="adminChangePassword()">Schimbă parola</button>
+          </div>
+          <button class="btn-logout" onclick="doLogout()" style="width:100%;padding:13px">⏏ Deconectare</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <input class="search-input" id="changePassInput" type="password" placeholder="Parolă nouă" style="flex:1;min-width:140px;box-sizing:border-box">
-          <button class="btn-grant-add" onclick="adminChangePassword()">Schimbă parola</button>
-        </div>
-        <button class="btn-logout" onclick="doLogout()" style="width:100%;padding:13px">⏏ Deconectare</button>
       </div>
     </div>
     <div class="bottom-bar">
@@ -302,8 +318,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=137"></script>
-  <script src="js/app.js?v=137"></script>
+<script src="js/sync.js?v=138"></script>
+  <script src="js/app.js?v=138"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -317,7 +333,7 @@
 })();
 </script>
 <script>
-const APP_VER = '137';
+const APP_VER = '138';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
