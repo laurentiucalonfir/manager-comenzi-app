@@ -22,6 +22,10 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "fcmTokens": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "admins": {
       ".read": "auth != null",
       "$uid": {
