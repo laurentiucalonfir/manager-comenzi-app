@@ -9,7 +9,7 @@ function sanitizeKey(s) {
 exports.sendOrderNotification = onValueWritten(
   { ref: '/orders/{orderId}', region: 'europe-west1' },
   async (event) => {
-    const order = event.data.val();
+    const order = event.data.after.val();
     if (!order || !order.location) return;
 
     const safeLoc = sanitizeKey(order.location);
