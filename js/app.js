@@ -5,9 +5,11 @@ let lastResults = [];
 let _authResolve = null;
 let _lastCentralizatorOrderCount = -1;
 
+let _authResolveFn = null;
 function waitForAuth() {
   if (_authResolve) return _authResolve;
   _authResolve = new Promise(function(resolve) {
+    _authResolveFn = resolve;
     if (authUser) { resolve(authUser); return; }
     function checkAuth() {
       if (authUser) { resolve(authUser); return; }
@@ -16,7 +18,7 @@ function waitForAuth() {
     checkAuth();
   });
   // timeout 15s — dacă nu apare auth, continuă oricum
-  setTimeout(function() { if (_authResolve) { _authResolve = null; resolve(null); } }, 15000);
+  setTimeout(function() { if (_authResolveFn) { var fn = _authResolveFn; _authResolveFn = null; _authResolve = null; fn(null); } }, 15000);
   return _authResolve;
 }
 

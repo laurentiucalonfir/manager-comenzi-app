@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v142';
+const CACHE = 'comenzi-wa-v143';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=142',
-  './js/app.js?v=142'
+  './js/sync.js?v=143',
+  './js/app.js?v=143'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
