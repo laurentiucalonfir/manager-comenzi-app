@@ -1,12 +1,4 @@
-const CACHE = 'comenzi-wa-v149';
-const ASSETS = [
-  './manifest.json',
-  './css/style.css',
-  './js/data.js',
-  './js/firebase-init.js',
-  './js/sync.js?v=149',
-  './js/app.js?v=149'
-];
+const CACHE = 'comenzi-wa-v1';
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
@@ -45,12 +37,9 @@ function incrementBadge() {
 }
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(function() {
-      _badgeCount = 0;
-      try { navigator.setAppBadge(0); } catch (e) {}
-    })
-  );
+  _badgeCount = 0;
+  try { navigator.setAppBadge(0); } catch (e) {}
+  e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('notificationclick', e => {
