@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v139';
+const CACHE = 'comenzi-wa-v140';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=139',
-  './js/app.js?v=139'
+  './js/sync.js?v=140',
+  './js/app.js?v=140'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -26,10 +26,13 @@ const fbMessaging = firebase.messaging();
 fbMessaging.onBackgroundMessage(function(payload) {
   var d = payload.data || {};
   incrementBadge();
+  var title = d.title || 'Comanda noua';
+  var opts = { body: d.body || '', icon: './icon-192.png', badge: './icon-192.png', data: { url: d.clickUrl || '/' } };
+  self.registration.showNotification(title, opts);
   try {
     clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(function(clientList) {
       clientList.forEach(function(c) {
-        c.postMessage({ type: 'newOrder', title: d.title, body: d.body });
+        c.postMessage({ type: 'newOrder', title: title, body: d.body });
       });
     });
   } catch (e) {}
