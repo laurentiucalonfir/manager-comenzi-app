@@ -42,6 +42,10 @@ self.addEventListener('install', e => {
   e.waitUntil(self.skipWaiting());
 });
 
+self.addEventListener('message', e => {
+  if (e.data && e.data.action === 'clearBadge') { _badgeCount = 0; try { navigator.setAppBadge(0); } catch (e) {} }
+});
+
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {

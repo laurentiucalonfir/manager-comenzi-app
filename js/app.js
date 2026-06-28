@@ -465,6 +465,7 @@ function doLogin() {
     } catch(e) { console.log('FCM init error:', e); }
     // clear badge on login / focus
     try { navigator.setAppBadge(0); } catch(e) {}
+    try { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ action: 'clearBadge' }); } catch(e) {}
     // listen for SW badge updates
     try { navigator.serviceWorker.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'newOrder') {
