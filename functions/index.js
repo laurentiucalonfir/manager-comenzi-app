@@ -31,15 +31,14 @@ exports.sendOrderNotification = onValueWritten(
     const tokens = [...tokenMap.keys()];
     if (!tokens.length) return;
 
-    const payload = {
-      data: {
-        title: 'Comanda noua',
-        body: order.location + ' a trimis o comanda!',
-        icon: '/icon-192.png',
-        clickUrl: '/'
-      }
+    const title = 'Comanda noua';
+    const body = order.location + ' a trimis o comanda!';
+    const msg = {
+      tokens,
+      notification: { title, body },
+      data: { title, body, clickUrl: '/' },
+      android: { priority: 'high', ttl: 0 }
     };
-    const msg = { tokens, data: payload.data, android: { priority: 'high' } };
 
     const result = await admin.messaging().sendEachForMulticast(msg);
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);
