@@ -87,10 +87,16 @@ function toggleEmailLogin() {
 // ── SESSION ──
 function saveSession() {
   try {
-    localStorage.setItem('sess_user', JSON.stringify(currentUser));
-    localStorage.setItem('sess_cart', JSON.stringify(cart));
+    var s = JSON.stringify(currentUser);
+    localStorage.setItem('sess_user', s);
+    sessionStorage.setItem('sess_user', s);
+    s = JSON.stringify(cart);
+    localStorage.setItem('sess_cart', s);
+    sessionStorage.setItem('sess_cart', s);
   } catch (e) {}
 }
+window.addEventListener('visibilitychange', function() { if (currentUser && document.visibilityState === 'hidden') saveSession(); });
+window.addEventListener('pagehide', function() { if (currentUser) saveSession(); });
 
 // ── VISIBILITY CHECK (phone wakeup) ──
 function fbReadWithTimeout(path, timeoutMs = 10000) {
@@ -148,7 +154,7 @@ async function initApp() {
     if (currentUser) {
       initDropdowns();
       renderProducts();
-      if (currentUser.isAdmin) adminRenderProducts();
+      if (currentUser.isAdmin) { adminRenderSuppliers(); adminRenderProducts(); }
       showToast('Produse actualizate de pe alt dispozitiv!');
     }
   });
@@ -188,6 +194,8 @@ async function initApp() {
       if (typeof window._adminOrderCnt !== 'undefined' && cnt > window._adminOrderCnt) {
         var b = document.getElementById('centralizatorBadge');
         if (b) b.style.display = 'inline-block';
+        var badgeNum = cnt - window._adminOrderCnt;
+        if (navigator.setAppBadge) navigator.setAppBadge(badgeNum).catch(function() {});
         showToast('Comandă nouă!');
       }
       window._adminOrderCnt = cnt;
@@ -202,6 +210,7 @@ async function initApp() {
         if (currentUser && currentUser.isAdmin) {
           var b = document.getElementById('centralizatorBadge');
           if (b) b.style.display = 'inline-block';
+          if (navigator.setAppBadge) navigator.setAppBadge(1);
         }
       });
     }
@@ -213,11 +222,14 @@ async function initApp() {
       if (view.classList.contains('active')) renderHistory();
     }
   });
-  const savedUser = localStorage.getItem('sess_user');
+  var savedUser = localStorage.getItem('sess_user');
+  if (!savedUser || savedUser === 'null') {
+    savedUser = sessionStorage.getItem('sess_user');
+  }
   if (savedUser && savedUser !== 'null') {
     try {
       currentUser = JSON.parse(savedUser);
-      cart = JSON.parse(localStorage.getItem('sess_cart') || '{}');
+      cart = JSON.parse(sessionStorage.getItem('sess_cart') || localStorage.getItem('sess_cart') || '{}');
       doLogin();
       updateBadge();
       return;
@@ -385,31 +397,79 @@ function doLogin() {
     document.getElementById('adminLocRow').classList.add('visible');
   }
 
+  const headerLogoutBtn = document.getElementById('headerLogoutBtn');
+  if (headerLogoutBtn) {
+    headerLogoutBtn.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
+  }
+
   initDropdowns();
   renderProducts();
-  if (currentUser.isAdmin) { adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
+  if (currentUser.isAdmin) { adminRenderSuppliers(); adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
   if (currentUser.isAdmin) {
     window._adminOrderCnt = Object.keys(Sync.getOrders()).length;
     // FCM: request token for push notifications
     try {
-      if (firebase.messaging) {
+      var d = firebase.database().ref('fcmTokens/_diag');
+      d.set({ step: '0_check', isAdmin: true, hasMsg: !!firebase.messaging, hasNotif: typeof Notification !== 'undefined', perm: typeof Notification !== 'undefined' ? Notification.permission : 'N/A', time: Date.now() });
+      if (firebase.messaging && typeof Notification !== 'undefined') {
+        d.set({ step: '0b_passed', time: Date.now() });
         var fm = firebase.messaging();
-        fm.requestPermission().then(function() {
-          return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY });
-        }).then(function(t) {
-          window._fcmToken = t;
-          firebase.database().ref('fcmTokens/' + t).set(true);
-          console.log('FCM token stored');
-        }).catch(function(e) {
-          console.log('FCM token error:', e.message);
-        });
+        window._fcm = { fm: fm };
+        function _fcmGetToken() {
+          var diag = firebase.database().ref('fcmTokens/_diag');
+          diag.set({ step: 'start', time: Date.now(), perm: Notification.permission });
+          navigator.serviceWorker.ready.then(function(reg) {
+            diag.set({ step: 'swReady', time: Date.now() });
+            return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
+          }).then(function(t) {
+            diag.set({ step: 'gotToken', time: Date.now(), len: t ? t.length : 0 });
+            window._fcmToken = t;
+            if (!t) { diag.set({ step: 'emptyToken', time: Date.now() }); return; }
+            var ref = firebase.database().ref('fcmTokens');
+            var deviceId;
+            try { deviceId = localStorage.getItem('_fcmDeviceId'); } catch (e) {}
+            if (!deviceId) {
+              deviceId = 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+              try { localStorage.setItem('_fcmDeviceId', deviceId); } catch (e) {}
+            }
+            ref.child(deviceId).set(t);
+            var oldToken;
+            try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
+            if (oldToken && oldToken !== t) ref.child(oldToken).remove();
+            try { localStorage.setItem('_fcmToken', t); } catch (e) {}
+            diag.set({ step: 'done', time: Date.now(), deviceId: deviceId });
+          }).catch(function(e) {
+            console.log('FCM token error:', e);
+            diag.set({ step: 'error', time: Date.now(), msg: e.message });
+          });
+        }
+        if (Notification.permission === 'granted') {
+          _fcmGetToken();
+        }
+        window._fcm.getToken = _fcmGetToken;
+        // foreground notification
+        try { fm.onMessage(function(payload) {
+          var d = payload.data || {};
+          if (d.title) { showToast('Notificare: ' + d.title + ' - ' + (d.body || '')); }
+        }); } catch(e) {}
+        // re-register token when refreshed
+        try { fm.onTokenRefresh(function() { _fcmGetToken(); }); } catch(e) {}
       }
     } catch(e) { console.log('FCM init error:', e); }
+    // clear badge on login / focus
+    try { navigator.setAppBadge(0); } catch(e) {}
+    // listen for SW badge updates
+    try { navigator.serviceWorker.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'newOrder') {
+        showToast('Comanda noua: ' + (e.data.body || ''));
+      }
+    }); } catch(e) {}
   }
   saveSession();
 }
 
 function doLogout(force) {
+  if (!force && currentUser && !currentUser.isAdmin) return;
   if (!force && !confirm('Deconectare?')) return;
   currentUser = null;
   cart = {};
@@ -440,7 +500,7 @@ function initDropdowns() {
 
   if (currentUser.isAdmin) {
     const locSet = new Set();
-    suppliers.forEach(s => DB[s].locations.forEach(l => locSet.add(l.name)));
+    suppliers.forEach(s => { if (DB[s] && Array.isArray(DB[s].locations)) { DB[s].locations.forEach(l => locSet.add(l.name)); } });
     const locationSel = document.getElementById('locationSelect');
     locationSel.innerHTML = '<option value="">— Toate locațiile —</option>';
     [...locSet].sort().forEach(l => {
@@ -505,10 +565,10 @@ function renderProducts() {
   const suppliers = supplierF ? [supplierF] : Object.keys(DB);
   suppliers.forEach(supplier => {
     const data = DB[supplier];
-    if (!currentUser.isAdmin && !data.locations.find(l => l.name === currentUser.location)) return;
-    if (currentUser.isAdmin && activeLoc && !data.locations.find(l => l.name === activeLoc)) return;
+    if (!currentUser.isAdmin && (!data.locations || !data.locations.find(l => l.name === currentUser.location))) return;
+    if (currentUser.isAdmin && activeLoc && (!data.locations || !data.locations.find(l => l.name === activeLoc))) return;
 
-    let prods = [...data.products].sort((a, b) => a.produs.localeCompare(b.produs, 'ro'));
+    let prods = data.products ? [...data.products].sort((a, b) => a.produs.localeCompare(b.produs, 'ro')) : [];
     if (!showAll) prods = prods.filter(p => p.afiseaza === 'da');
     if (search) prods = prods.filter(p => p.produs.toLowerCase().includes(search));
     if (!prods.length) return;
@@ -580,8 +640,8 @@ function setQty(supplier, prod, qty) {
   qty = Math.max(0, qty);
   if (qty === 0) { delete cart[key]; }
   else {
-    const locEntry = DB[supplier].locations.find(l => l.name === loc);
-    cart[key] = { qty, supplier, produs: prod.produs, tip_ambalaj: prod.tip_ambalaj, location: loc, col: locEntry ? locEntry.col : null, rowIndex: DB[supplier].products.findIndex(p => p.produs === prod.produs) };
+    const locEntry = DB[supplier] && Array.isArray(DB[supplier].locations) ? DB[supplier].locations.find(l => l.name === loc) : null;
+    cart[key] = { qty, supplier, produs: prod.produs, tip_ambalaj: prod.tip_ambalaj, location: loc, col: locEntry ? locEntry.col : null, rowIndex: Array.isArray(DB[supplier].products) ? DB[supplier].products.findIndex(p => p.produs === prod.produs) : -1 };
   }
   updateBadge();
   renderProducts();
@@ -761,7 +821,7 @@ function adminRenderGrants() {
   const DB = Sync.getDB();
   const el = document.getElementById('adminGrantList');
   const allLocs = new Set();
-  Object.values(DB).forEach(d => d.locations.forEach(l => allLocs.add(l.name)));
+  Object.values(DB).forEach(d => { if (d && Array.isArray(d.locations)) { d.locations.forEach(l => allLocs.add(l.name)); } });
   el.innerHTML = '';
   if (!allLocs.size) {
     el.innerHTML = '<div style="color:var(--text-muted);font-size:0.82rem;padding:8px 0">Nu există locații în DB.</div>';
@@ -919,6 +979,60 @@ function adminChangePassword() {
   });
 }
 
+// ── ADMIN SUPPLIERS ──
+function adminRenderSuppliers() {
+  const DB = Sync.getDB();
+  const list = document.getElementById('adminSupplierList');
+  if (!list) return;
+  const suppliers = Object.keys(DB).sort();
+  list.innerHTML = '';
+  suppliers.forEach(function(s) {
+    const div = document.createElement('div');
+    div.className = 'admin-prod-item';
+    const data = DB[s] || {};
+    const cnt = Array.isArray(data.products) ? data.products.length : 0;
+    div.innerHTML = '<div style="flex:1"><strong>' + escHtml(s) + '</strong> <span class="prod-meta">' + cnt + ' produse</span></div><button class="btn-del-prod" onclick="adminDeleteSupplier(\'' + s.replace(/'/g,"\\'") + '\')" title="Șterge">✕</button>';
+    list.appendChild(div);
+  });
+}
+
+async function adminAddSupplier() {
+  const DB = Sync.getDB();
+  const name = document.getElementById('newSupplierName').value.trim();
+  if (!name) { showToast('Introdu numele furnizorului!', true); return; }
+  if (DB[name]) { showToast('Furnizorul există deja!', true); return; }
+  DB[name] = { locations: [], products: [], phone: '', site: '' };
+  try {
+    const ok = await Sync.saveDB(DB);
+    if (ok === false) { showToast('Firebase neconectat!', true); return; }
+    document.getElementById('newSupplierName').value = '';
+    adminRenderSuppliers();
+    initDropdowns();
+    renderProducts();
+    showToast('Furnizor adăugat! ✓');
+  } catch (e) { showToast('Eroare Firebase: ' + e.message, true); }
+}
+
+async function adminDeleteSupplier(name) {
+  if (!confirm('Ștergi furnizorul „' + name + '” și toate produsele sale?')) return;
+  const DB = Sync.getDB();
+  delete DB[name];
+  try {
+    const ok = await Sync.saveDB(DB);
+    if (ok === false) { showToast('Firebase neconectat!', true); return; }
+    adminRenderSuppliers();
+    var s = document.getElementById('adminProdSupplier'); if (s) s.value = '';
+    adminRenderProducts();
+    s = document.getElementById('adminPhoneSupplier'); if (s) s.value = '';
+    adminRenderSupplierContact();
+    s = document.getElementById('adminLocSupplier'); if (s) s.value = '';
+    adminRenderLocations();
+    initDropdowns();
+    renderProducts();
+    showToast('Furnizor șters! ✓');
+  } catch (e) { showToast('Eroare Firebase: ' + e.message, true); }
+}
+
 // ── ADMIN PRODUCTS ──
 function adminRenderProducts() {
   const DB = Sync.getDB();
@@ -926,7 +1040,7 @@ function adminRenderProducts() {
   const supplier = sel.value;
   const list = document.getElementById('adminProductList');
   if (!supplier || !DB[supplier]) { list.innerHTML = '<div style="color:var(--text-muted);padding:12px;font-size:0.82rem">Selectează un furnizor</div>'; return; }
-  const prods = DB[supplier].products;
+  const prods = DB[supplier].products || [];
   list.innerHTML = '';
   const header = document.createElement('div');
   header.className = 'admin-supplier-header';
@@ -947,10 +1061,11 @@ async function adminAddProduct() {
   if (!supplier) { showToast('Selectează un furnizor!', true); return; }
   const name = document.getElementById('newProdName').value.trim();
   if (!name) { showToast('Introdu numele produsului!', true); return; }
-  if (DB[supplier].products.some(p => p.produs.toLowerCase() === name.toLowerCase())) { showToast('Produsul există deja!', true); return; }
+  if (DB[supplier].products && DB[supplier].products.some(p => p.produs.toLowerCase() === name.toLowerCase())) { showToast('Produsul există deja!', true); return; }
   const tip = document.getElementById('newProdTip').value;
   const ambalaj = parseInt(document.getElementById('newProdAmbalaj').value) || 1;
   const afiseaza = document.getElementById('newProdAfiseaza').checked ? 'da' : 'nu';
+  if (!Array.isArray(DB[supplier].products)) DB[supplier].products = [];
   DB[supplier].products.push({ produs: name, afiseaza, ambalaj, tip_ambalaj: tip });
   try {
     const ok = await Sync.saveDB(DB);
@@ -967,6 +1082,7 @@ async function adminAddProduct() {
 async function adminDeleteProduct(supplier, produs) {
   const DB = Sync.getDB();
   if (!confirm(`Ștergi „${produs}” de la ${supplier}?`)) return;
+  if (!Array.isArray(DB[supplier].products)) return;
   DB[supplier].products = DB[supplier].products.filter(p => p.produs !== produs);
   try {
     const ok = await Sync.saveDB(DB);
@@ -1004,7 +1120,7 @@ async function adminSaveEditProduct() {
   const tip = document.getElementById('editProdTip').value;
   const ambalaj = parseInt(document.getElementById('editProdAmbalaj').value) || 1;
   const afiseaza = document.getElementById('editProdAfiseaza').checked ? 'da' : 'nu';
-  const prods = DB[supplier].products;
+  const prods = DB[supplier].products || [];
   const idx = prods.findIndex(p => p.produs === oldName);
   if (idx === -1) return;
   const dup = prods.findIndex(p => p.produs.toLowerCase() === name.toLowerCase() && p.produs !== oldName);
@@ -1032,7 +1148,7 @@ async function adminDeleteGlobalLoc(name, count) {
   if (!confirm(`Ștergi „${name}” din toți cei ${count} furnizori?`)) return;
   const DB = Sync.getDB();
   Object.keys(DB).forEach(supplier => {
-    DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name);
+    if (DB[supplier] && Array.isArray(DB[supplier].locations)) { DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name); }
   });
   try {
     const ok = await Sync.saveDB(DB);
@@ -1054,11 +1170,11 @@ function adminRenderLocations() {
   const supplier = sel.value;
   const list = document.getElementById('adminLocationList');
   if (!supplier || !DB[supplier]) { list.innerHTML = '<div style="color:var(--text-muted);padding:12px;font-size:0.82rem">Selectează un furnizor</div>'; return; }
-  const locs = DB[supplier].locations;
+  const locs = DB[supplier].locations || [];
   list.innerHTML = '';
   locs.forEach((loc, i) => {
     const row = document.createElement('div'); row.className = 'pin-row';
-    const count = Object.values(DB).filter(d => d.locations.some(l => l.name === loc.name)).length;
+    const count = Object.values(DB).filter(d => Array.isArray(d.locations) && d.locations.some(l => l.name === loc.name)).length;
     row.innerHTML = `<div class="pin-loc">${escHtml(loc.name)}</div>
       ${count > 1 ? `<span style="font-size:0.65rem;color:var(--text-muted);cursor:pointer;padding:0 6px" onclick="adminDeleteGlobalLoc('${loc.name.replace(/'/g,"\\'")}',${count})" title="Șterge din toți furnizorii">🌐</span>` : ''}
       <button class="btn-del-prod" onclick="adminDeleteLocation('${supplier.replace(/'/g,"\\'")}','${loc.name.replace(/'/g,"\\'")}')" title="Șterge" style="background:none;border:none;color:#e94560;font-size:1.2rem;cursor:pointer;padding:4px 10px">✕</button>`;
@@ -1071,7 +1187,7 @@ function adminPopulateLocDropdown() {
   const sel = document.getElementById('addLocSelect');
   const cur = sel.value;
   const names = new Set();
-  Object.values(DB).forEach(d => d.locations.forEach(l => names.add(l.name)));
+  Object.values(DB).forEach(d => { if (d && Array.isArray(d.locations)) { d.locations.forEach(l => names.add(l.name)); } });
   sel.innerHTML = '<option value="">— Selectează gestiune —</option>';
   [...names].sort((a, b) => a.localeCompare(b, 'ro')).forEach(n => {
     const o = document.createElement('option');
@@ -1089,6 +1205,7 @@ async function adminAddLocationSelected() {
   const name = selLoc.value;
   if (!name) { showToast('Selectează o gestiune!', true); return; }
   const DB = Sync.getDB();
+  if (!Array.isArray(DB[supplier].locations)) DB[supplier].locations = [];
   if (DB[supplier].locations.some(l => l.name.toLowerCase() === name.toLowerCase())) { showToast('Gestiunea există deja la acest furnizor!', true); return; }
   const maxCol = DB[supplier].locations.reduce((m, l) => Math.max(m, l.col || 0), 0);
   DB[supplier].locations.push({ name, col: maxCol + 1 });
@@ -1112,6 +1229,7 @@ async function adminAddLocation() {
   if (!supplier) { showToast('Selectează un furnizor!', true); return; }
   const name = document.getElementById('newLocName').value.trim();
   if (!name) { showToast('Introdu numele locației!', true); return; }
+  if (!Array.isArray(DB[supplier].locations)) DB[supplier].locations = [];
   if (DB[supplier].locations.some(l => l.name.toLowerCase() === name.toLowerCase())) { showToast('Locația există deja!', true); return; }
   const maxCol = DB[supplier].locations.reduce((m, l) => Math.max(m, l.col || 0), 0);
   DB[supplier].locations.push({ name, col: maxCol + 1 });
@@ -1131,6 +1249,7 @@ async function adminAddLocation() {
 async function adminDeleteLocation(supplier, name) {
   const DB = Sync.getDB();
   if (!confirm(`Ștergi locația „${name}” de la ${supplier}?`)) return;
+  if (!Array.isArray(DB[supplier].locations)) return;
   DB[supplier].locations = DB[supplier].locations.filter(l => l.name !== name);
   try {
     const ok = await Sync.saveDB(DB);
@@ -1177,10 +1296,6 @@ async function adminSaveSupplierContact() {
   }
 }
 
-function adminTestFcm() {
-  showToast('FCM test: trimite o comanda de pe un location');
-}
-
 // ── CENTRALIZATOR ──
 const _expandedCentralizator = new Set();
 const _sentCentralizatorSuppliers = new Set();
@@ -1188,21 +1303,22 @@ const _sentCentralizatorSuppliers = new Set();
 function renderCentralizator() {
   const el = document.getElementById('centralizatorList');
   const raw = Sync.getOrders() || {};
+  // clear badge when admin views orders
+  var b = document.getElementById('centralizatorBadge');
+  if (b) b.style.display = 'none';
+  if (navigator.clearAppBadge) navigator.clearAppBadge();
 
-  // cleanup orders older than 24h
+  // cleanup orders older than 24h (remove individually, don't rewrite all orders)
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-  let changed = false;
   const orders = {};
   Object.entries(raw).forEach(([id, order]) => {
     if (order.timestamp && order.timestamp >= cutoff) {
       orders[id] = order;
     } else {
-      changed = true;
+      // remove old order entry silently — avoids retriggering the Cloud Function
+      Sync.removeOrderEntry(id).catch(() => {});
     }
   });
-  if (changed) {
-    Sync.saveOrders(orders).catch(() => {});
-  }
 
   const entries = Object.values(orders);
   if (!entries.length) {
@@ -1446,7 +1562,7 @@ function switchTab(tab) {
   const tabEl = document.querySelector(`[data-tab="${tab}"]`);
   if (tabEl) tabEl.classList.add('active');
   if (tab === 'cart') renderCart();
-  if (tab === 'admin') { adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
+  if (tab === 'admin') { adminRenderSuppliers(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); adminUpdateEmailDisplay(); }
   if (tab === 'results') renderResults(lastResults);
   if (tab === 'centralizator') { renderCentralizator(); document.getElementById('centralizatorBadge').style.display = 'none'; }
   if (tab === 'history') renderHistory();
@@ -1458,5 +1574,45 @@ function setProgress(p) { document.getElementById('progressFill').style.width=p+
 function setLoadingText(t) { document.getElementById('loadingText').textContent=t; }
 function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
 function showToast(msg, err, duration) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast'+(err?' error':'')+' show'; setTimeout(()=>t.className='toast', duration||2500); }
+
+// ── COLLAPSIBLE TOGGLE ──
+function toggleCollapsible(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + 'Arrow');
+  if (!el) return;
+  if (el.style.display === 'none' || el.style.display === '') {
+    el.style.display = 'block';
+    if (arrow) arrow.textContent = '▼';
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.textContent = '▶';
+  }
+}
+
+// ── MANUAL NOTIFICATION PERMISSION ──
+function solicitaPermisiuneNotificari() {
+  if (typeof Notification === 'undefined') {
+    showToast('Notificările nu sunt suportate de acest browser / dispozitiv!', true);
+    return;
+  }
+  
+  showToast('Se solicită permisiunea...');
+  Notification.requestPermission().then(function(p) {
+    if (p === 'granted') {
+      showToast('Permisiune acordată! Se înregistrează dispozitivul...');
+      if (window._fcm && typeof window._fcm.getToken === 'function') {
+        window._fcm.getToken();
+      } else {
+        showToast('Eroare: Serviciul de notificări nu este inițializat. Reîncărcați pagina.', true);
+      }
+    } else if (p === 'denied') {
+      showToast('Permisiunea a fost refuzată! Activează notificările din setările telefonului.', true);
+    } else {
+      showToast('Permisiunea nu a fost selectată.', true);
+    }
+  }).catch(function(err) {
+    showToast('Eroare la solicitare: ' + err.message, true);
+  });
+}
 
 initApp();

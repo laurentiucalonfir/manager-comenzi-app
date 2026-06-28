@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v112';
+const CACHE = 'comenzi-wa-v139';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=112',
-  './js/app.js?v=112'
+  './js/sync.js?v=139',
+  './js/app.js?v=139'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -25,14 +25,29 @@ const fbMessaging = firebase.messaging();
 
 fbMessaging.onBackgroundMessage(function(payload) {
   var d = payload.data || {};
-  var title = d.title || 'Comanda noua';
-  var opts = { body: d.body || '', icon: './icon-192.png', data: { url: d.clickUrl || '/' } };
-  self.registration.showNotification(title, opts);
+  incrementBadge();
+  try {
+    clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(function(clientList) {
+      clientList.forEach(function(c) {
+        c.postMessage({ type: 'newOrder', title: d.title, body: d.body });
+      });
+    });
+  } catch (e) {}
 });
+
+var _badgeCount = 0;
+function incrementBadge() {
+  _badgeCount++;
+  try { navigator.setAppBadge(_badgeCount); } catch (e) {}
+}
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(function() {
+      _badgeCount = 0;
+      try { navigator.setAppBadge(0); } catch (e) {}
+      return self.skipWaiting();
+    })
   );
 });
 
