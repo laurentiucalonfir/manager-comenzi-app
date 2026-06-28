@@ -35,7 +35,7 @@ exports.sendOrderNotification = onValueWritten(
     const body = order.location + ' a trimis o comanda!';
     const msg = {
       tokens,
-      notification: { title, body },
+      notification: { title, body, icon: '/icon-192.png' },
       data: { title, body, clickUrl: '/' },
       android: { priority: 'high', ttl: 0 }
     };
