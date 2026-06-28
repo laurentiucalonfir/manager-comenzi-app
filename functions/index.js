@@ -31,12 +31,14 @@ exports.sendOrderNotification = onValueWritten(
     const tokens = [...tokenMap.keys()];
     if (!tokens.length) return;
 
-    const title = 'Comanda noua';
-    const body = order.location + ' a trimis o comanda!';
     const msg = {
       tokens,
-      notification: { title, body, icon: '/icon-192.png' },
-      data: { title, body, clickUrl: '/' },
+      data: {
+        title: 'Comanda noua',
+        body: order.location + ' a trimis o comanda!',
+        clickUrl: '/',
+        icon: '/icon-192.png'
+      },
       android: { priority: 'high', ttl: 0 }
     };
 
