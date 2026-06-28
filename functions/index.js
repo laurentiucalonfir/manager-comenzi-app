@@ -45,8 +45,11 @@ exports.sendOrderNotification = onValueWritten(
 
     if (result.failureCount > 0) {
       result.responses.forEach((resp, i) => {
-        if (resp.error && (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered')) {
-          admin.database().ref('fcmTokens/' + tokenMap.get(tokens[i])).remove();
+        if (resp.error) {
+          console.log('Token', i, 'error:', resp.error.code, resp.error.message);
+          if (resp.error.code === 'messaging/invalid-registration-token' || resp.error.code === 'messaging/registration-token-not-registered') {
+            admin.database().ref('fcmTokens/' + tokenMap.get(tokens[i])).remove();
+          }
         }
       });
     }
