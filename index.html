@@ -318,8 +318,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=144"></script>
-  <script src="js/app.js?v=144"></script>
+<script src="js/sync.js?v=145"></script>
+  <script src="js/app.js?v=145"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -333,59 +333,17 @@
 })();
 </script>
 <script>
-const APP_VER = '144';
+const APP_VER = '145';
 if ('serviceWorker' in navigator) {
   let reg = null;
-
-  function swSaveAndReload() {
-    try {
-      if (typeof currentUser !== 'undefined' && currentUser) {
-        sessionStorage.setItem('sess_user', JSON.stringify(currentUser));
-        sessionStorage.setItem('sess_cart', JSON.stringify(cart));
-      }
-    } catch (e) {}
-    window.location.reload();
-  }
-
-  function swActivateWaiting() {
-    if (!reg || !reg.waiting) return;
-    reg.waiting.postMessage({ action: 'skipWaiting' });
-  }
-
-  function swCheckUpdate() {
-    if (reg) reg.update();
-  }
 
   navigator.serviceWorker.register('sw.js?v=' + APP_VER, {
     updateViaCache: 'none'
   }).then(r => {
     reg = r;
-    r.update();
-
-    if (r.waiting) {
-      swActivateWaiting();
-    }
-
-    r.addEventListener('updatefound', () => {
-      const sw = r.installing;
-      if (!sw) return;
-      sw.addEventListener('statechange', () => {
-        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-          swActivateWaiting();
-        }
-      });
-    });
   }).catch(() => {});
 
-  navigator.serviceWorker.addEventListener('controllerchange', swSaveAndReload);
-  setInterval(swCheckUpdate, 60000);
-
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      swCheckUpdate();
-      setTimeout(swActivateWaiting, 500);
-    }
-  });
+  setInterval(function() { if (reg) reg.update(); }, 3600000);
 }
 </script>
 </body>

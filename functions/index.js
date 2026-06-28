@@ -39,8 +39,9 @@ exports.sendOrderNotification = onValueWritten(
         clickUrl: '/'
       }
     };
+    const msg = { tokens, data: payload.data, android: { priority: 'high' } };
 
-    const result = await admin.messaging().sendEachForMulticast({ tokens, ...payload });
+    const result = await admin.messaging().sendEachForMulticast(msg);
     console.log('FCM sent to', tokens.length, 'tokens, success:', result.successCount, 'fail:', result.failureCount);
 
     if (result.failureCount > 0) {
