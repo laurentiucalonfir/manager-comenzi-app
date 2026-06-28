@@ -422,14 +422,12 @@ function doLogin() {
           diag.set({ step: 'start', time: Date.now(), perm: Notification.permission });
           try {
             navigator.serviceWorker.ready.then(function(reg) {
-              showToast('SW gata, solicit token FCM...');
               diag.set({ step: 'swReady', time: Date.now() });
               return fm.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
             }).then(function(t) {
-              showToast('Token FCM primit (' + (t ? t.length + ' chars' : 'gol') + ')');
               diag.set({ step: 'gotToken', time: Date.now(), len: t ? t.length : 0 });
               window._fcmToken = t;
-              if (!t) { diag.set({ step: 'emptyToken', time: Date.now() }); showToast('Token FCM gol!', true); return; }
+              if (!t) { diag.set({ step: 'emptyToken', time: Date.now() }); return; }
               var ref = firebase.database().ref('fcmTokens');
               var deviceId;
               try { deviceId = localStorage.getItem('_fcmDeviceId'); } catch (e) {}
@@ -438,22 +436,18 @@ function doLogin() {
                 try { localStorage.setItem('_fcmDeviceId', deviceId); } catch (e) {}
               }
               ref.child(deviceId).set(t);
-              showToast('Token salvat in DB, dispozitiv: ' + deviceId);
               var oldToken;
               try { oldToken = localStorage.getItem('_fcmToken'); } catch (e) {}
               if (oldToken && oldToken !== t) ref.child(oldToken).remove();
               try { localStorage.setItem('_fcmToken', t); } catch (e) {}
               diag.set({ step: 'done', time: Date.now(), deviceId: deviceId });
-              showToast('Dispozitiv inregistrat pentru notificari!');
             }).catch(function(e) {
               console.log('FCM token error:', e);
               diag.set({ step: 'error', time: Date.now(), msg: e.message });
-              showToast('Eroare FCM: ' + e.message, true);
             });
           } catch(e) {
             console.log('FCM token crash:', e);
             diag.set({ step: 'crash', time: Date.now(), msg: e.message });
-            showToast('Eroare critica FCM: ' + e.message, true);
           }
         }
         if (Notification.permission === 'granted') {
