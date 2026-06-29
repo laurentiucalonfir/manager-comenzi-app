@@ -17,9 +17,9 @@ const fbMessaging = firebase.messaging();
 
 fbMessaging.onBackgroundMessage(function(payload) {
   var d = payload.data || {};
-  incrementBadge();
+  navigator.setAppBadge(1).catch(function() {});
   var title = d.title || 'Comanda noua';
-  var opts = { body: d.body || '', icon: './icon-192.png', badge: './icon-192.png', data: { url: d.clickUrl || '/' } };
+  var opts = { body: d.body || '', icon: './icon-192.png', badge: './icon-192.png', tag: 'newOrder', data: { url: d.clickUrl || '/' } };
   self.registration.showNotification(title, opts);
   try {
     clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(function(clientList) {
@@ -30,20 +30,13 @@ fbMessaging.onBackgroundMessage(function(payload) {
   } catch (e) {}
 });
 
-var _badgeCount = 0;
-function incrementBadge() {
-  _badgeCount++;
-  try { navigator.setAppBadge(_badgeCount); } catch (e) {}
-}
-
 self.addEventListener('install', e => {
-  _badgeCount = 0;
   try { navigator.setAppBadge(0); } catch (e) {}
   e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('message', e => {
-  if (e.data && e.data.action === 'clearBadge') { _badgeCount = 0; try { navigator.setAppBadge(0); } catch (e) {} }
+  if (e.data && e.data.action === 'clearBadge') { try { navigator.setAppBadge(0); } catch (e) {} }
 });
 
 self.addEventListener('notificationclick', e => {

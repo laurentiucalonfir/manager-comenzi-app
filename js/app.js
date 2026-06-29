@@ -466,7 +466,6 @@ function doLogin() {
     // clear badge on login / focus
     try { navigator.setAppBadge(0); } catch(e) {}
     try { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ action: 'clearBadge' }); } catch(e) {}
-    // listen for SW badge updates
     try { navigator.serviceWorker.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'newOrder') {
         showToast('Comanda noua: ' + (e.data.body || ''));
