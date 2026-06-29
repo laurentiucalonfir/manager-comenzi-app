@@ -264,6 +264,21 @@ const Sync = {
     }
   },
 
+  async saveLocationHistory(location, data) {
+    if (!this._history[location]) this._history[location] = {};
+    this._history[location] = data;
+    this._saveLocal();
+    if (!firebaseReady) return false;
+    try {
+      const sanitized = this._sanitizeFirebaseKey(location);
+      await firebase.database().ref('history/' + sanitized).set(data);
+      return true;
+    } catch (e) {
+      console.warn('Firebase save error (location history):', e);
+      throw e;
+    }
+  },
+
   onHistoryChange(fn) { this._historyListeners.push(fn); },
   _sanitizeOrderKey(k) { return this._sanitizeFirebaseKey(k); },
   _desanitizeOrderKey(k) { return this._desanitizeFirebaseKey(k); },

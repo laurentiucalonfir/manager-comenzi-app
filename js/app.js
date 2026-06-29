@@ -795,7 +795,7 @@ async function trimiteComanda() {
     const oldest = keys.shift();
     delete history[locKey][oldest];
   }
-  try { await Sync.saveHistory(history); } catch (e) {}
+  try { await Sync.saveLocationHistory(locKey, history[locKey]); } catch (e) {}
   cart = {}; updateBadge(); renderProducts();
   renderResults(lastResults);
   switchTab('results');
