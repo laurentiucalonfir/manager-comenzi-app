@@ -23,13 +23,15 @@
       ".write": "auth != null"
     },
     "fcmTokens": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "root.child('admins/' + auth.uid).exists()",
+      "$deviceId": {
+        ".write": "auth != null"
+      }
     },
     "admins": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "$uid === auth.uid"
+        ".write": "($uid === auth.uid && auth.token.firebase.sign_in_provider === 'password') || root.child('admins/' + auth.uid).exists()"
       }
     }
   }
