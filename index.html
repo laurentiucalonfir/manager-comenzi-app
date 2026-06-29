@@ -55,7 +55,7 @@
     <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
     <div class="header-right">
       <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
-      <button class="btn-icon btn-logout" onclick="doLogout()">⏏</button>
+      <button class="btn-icon btn-logout" id="headerLogoutBtn" onclick="doLogout()">⏏</button>
     </div>
   </div>
 
@@ -318,8 +318,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=138"></script>
-  <script src="js/app.js?v=138"></script>
+<script src="js/sync.js?v=139"></script>
+  <script src="js/app.js?v=139"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -333,7 +333,7 @@
 })();
 </script>
 <script>
-const APP_VER = '138';
+const APP_VER = '139';
 if ('serviceWorker' in navigator) {
   let reg = null;
 

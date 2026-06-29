@@ -45,6 +45,9 @@ exports.sendOrderNotification = onValueWritten(
         body: order.location + ' a trimis o comanda!'
       },
       webpush: {
+        headers: {
+          Urgency: 'high'
+        },
         notification: {
           title: 'Comanda noua',
           body: order.location + ' a trimis o comanda!',
@@ -56,6 +59,12 @@ exports.sendOrderNotification = onValueWritten(
           renotify: true
         },
         fcmOptions: { link: '/' }
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          sound: 'default'
+        }
       },
       data: {
         title: 'Comanda noua',

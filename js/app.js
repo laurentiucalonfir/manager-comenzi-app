@@ -397,6 +397,11 @@ function doLogin() {
     document.getElementById('adminLocRow').classList.add('visible');
   }
 
+  const headerLogoutBtn = document.getElementById('headerLogoutBtn');
+  if (headerLogoutBtn) {
+    headerLogoutBtn.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
+  }
+
   initDropdowns();
   renderProducts();
   if (currentUser.isAdmin) { adminRenderSuppliers(); adminRenderGrants(); adminRenderProducts(); adminRenderLocations(); adminPopulateLocDropdown(); }
@@ -440,6 +445,18 @@ function doLogin() {
         }
         if (Notification.permission === 'granted') {
           _fcmGetToken();
+        } else if (Notification.permission === 'default') {
+          var reqPerm = function() {
+            Notification.requestPermission().then(function(permission) {
+              if (permission === 'granted') {
+                _fcmGetToken();
+              }
+            });
+            document.removeEventListener('click', reqPerm);
+            document.removeEventListener('touchstart', reqPerm);
+          };
+          document.addEventListener('click', reqPerm);
+          document.addEventListener('touchstart', reqPerm);
         }
         window._fcm.getToken = _fcmGetToken;
         // foreground notification
@@ -464,6 +481,7 @@ function doLogin() {
 }
 
 function doLogout(force) {
+  if (!force && currentUser && !currentUser.isAdmin) return;
   if (!force && !confirm('Deconectare?')) return;
   currentUser = null;
   cart = {};
