@@ -21,14 +21,29 @@ function initFirebase() {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebase.database();
 
-    firebase.auth().signInAnonymously().catch(function(err) {
-      console.warn('Auth anonimă nereușită:', err);
-    });
+    let isLocalAdmin = false;
+    try {
+      const s = localStorage.getItem('sess_user') || sessionStorage.getItem('sess_user');
+      if (s) {
+        const u = JSON.parse(s);
+        if (u && u.isAdmin) isLocalAdmin = true;
+      }
+    } catch(e) {}
+
     firebase.auth().onAuthStateChanged(function(user) {
-      authUser = user;
-      authReady = true;
       if (user) {
+        authUser = user;
+        authReady = true;
         console.log('Auth user:', user.uid);
+      } else {
+        if (!isLocalAdmin) {
+          firebase.auth().signInAnonymously().catch(function(err) {
+            console.warn('Auth anonimă nereușită:', err);
+          });
+        } else {
+          authUser = null;
+          authReady = true;
+        }
       }
     });
 
