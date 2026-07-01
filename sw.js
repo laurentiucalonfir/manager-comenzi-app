@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v139';
+const CACHE = 'comenzi-wa-v141';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=139',
-  './js/app.js?v=139'
+  './js/sync.js?v=141',
+  './js/app.js?v=141'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -25,11 +25,12 @@ const fbMessaging = firebase.messaging();
 
 fbMessaging.onBackgroundMessage(function(payload) {
   var d = payload.data || {};
+  var n = payload.notification || {};
   incrementBadge();
   try {
     clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(function(clientList) {
       clientList.forEach(function(c) {
-        c.postMessage({ type: 'newOrder', title: d.title, body: d.body });
+        c.postMessage({ type: 'newOrder', title: d.title || n.title, body: d.body || n.body });
       });
     });
   } catch (e) {}

@@ -53,10 +53,7 @@ exports.sendOrderNotification = onValueWritten(
           body: order.location + ' a trimis o comanda!',
           icon: '/icon-192.png',
           badge: '/icon-192.png',
-          vibrate: [200, 100, 200],
-          requireInteraction: true,
-          tag: 'order',
-          renotify: true
+          vibrate: [200, 100, 200]
         },
         fcmOptions: { link: '/' }
       },
