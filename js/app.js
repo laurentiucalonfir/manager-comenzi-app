@@ -111,13 +111,20 @@ function fbReadWithTimeout(path, timeoutMs = 10000) {
     new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
   ]);
 }
+function clearPwaBadge() {
+  try { if (navigator.clearAppBadge) navigator.clearAppBadge(); else if (navigator.setAppBadge) navigator.setAppBadge(0); } catch(e) {}
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg && reg.active) {
+        reg.active.postMessage({ action: 'clearBadge' });
+      }
+    }).catch(function(){});
+  }
+}
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    try { if (navigator.clearAppBadge) navigator.clearAppBadge(); else if (navigator.setAppBadge) navigator.setAppBadge(0); } catch(e) {}
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ action: 'clearBadge' });
-    }
+    clearPwaBadge();
   }
   if (document.visibilityState === 'visible' && currentUser && !currentUser.isAdmin) {
     if (firebaseReady) {
@@ -447,7 +454,7 @@ function doLogin() {
       }
     } catch(e) { console.log('FCM init error:', e); }
     // clear badge on login / focus
-    try { navigator.setAppBadge(0); } catch(e) {}
+    clearPwaBadge();
     // listen for SW badge updates
     try { navigator.serviceWorker.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'newOrder') {
@@ -1315,7 +1322,7 @@ function renderCentralizator() {
   // clear badge when admin views orders
   var b = document.getElementById('centralizatorBadge');
   if (b) b.style.display = 'none';
-  if (navigator.clearAppBadge) navigator.clearAppBadge();
+  clearPwaBadge();
 
   // cleanup orders older than 24h (remove individually, don't rewrite all orders)
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
