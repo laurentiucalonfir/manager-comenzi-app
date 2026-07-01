@@ -17,29 +17,17 @@
 <div class="login-screen" id="loginScreen" style="display:none">
   <div class="login-logo">C<span>orina Caffe</span></div>
   <div class="login-sub">Sistem comenzi furnizori</div>
-  <div class="login-label">Introdu PIN-ul</div>
-  <input class="pin-display" id="pinDisplay" type="text" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="······" maxlength="20">
-  <div class="pin-hint">PIN 6 cifre</div>
-  <div class="numpad">
-    <button class="numpad-btn" onclick="pinPress('1')">1</button>
-    <button class="numpad-btn" onclick="pinPress('2')">2</button>
-    <button class="numpad-btn" onclick="pinPress('3')">3</button>
-    <button class="numpad-btn" onclick="pinPress('4')">4</button>
-    <button class="numpad-btn" onclick="pinPress('5')">5</button>
-    <button class="numpad-btn" onclick="pinPress('6')">6</button>
-    <button class="numpad-btn" onclick="pinPress('7')">7</button>
-    <button class="numpad-btn" onclick="pinPress('8')">8</button>
-    <button class="numpad-btn" onclick="pinPress('9')">9</button>
-    <button class="numpad-btn del" onclick="pinDel()">⌫</button>
-    <button class="numpad-btn" onclick="pinPress('0')">0</button>
-    <button class="numpad-btn ok" onclick="pinOk()">OK</button>
+  <div id="loginCodeSection" style="width:100%">
+    <div class="login-label">Introdu codul locației</div>
+    <input class="search-input" id="pinInput" type="text" placeholder="Cod locație" style="margin-bottom:12px;width:100%;box-sizing:border-box;font-size:1.2rem;text-align:center;padding:12px;" onkeydown="if(event.key === 'Enter') loginWithCode()">
+    <button class="btn-main" onclick="loginWithCode()" style="width:100%;padding:13px">Autentificare</button>
   </div>
   <div id="loginEmailSection" style="display:none;margin-top:16px;width:100%">
     <div class="login-label">Autentificare Admin</div>
     <input class="search-input" id="emailInput" type="email" placeholder="Email" style="margin-bottom:8px;width:100%;box-sizing:border-box">
-    <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="margin-bottom:8px;width:100%;box-sizing:border-box">
+    <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="margin-bottom:8px;width:100%;box-sizing:border-box" onkeydown="if(event.key === 'Enter') loginWithEmail()">
     <button class="btn-main" onclick="loginWithEmail()" style="width:100%;padding:13px">Autentificare</button>
-    <button class="btn-secondary" onclick="toggleEmailLogin()" style="width:100%;margin-top:6px;padding:13px">← Înapoi la PIN</button>
+    <button class="btn-secondary" onclick="toggleEmailLogin()" style="width:100%;margin-top:6px;padding:13px">← Înapoi la cod</button>
   </div>
   <div style="text-align:center;margin-top:8px">
     <button class="btn-email-toggle" onclick="toggleEmailLogin()" style="background:none;border:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;padding:4px 8px">Autentificare admin cu email</button>
@@ -318,8 +306,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=141"></script>
-  <script src="js/app.js?v=141"></script>
+<script src="js/sync.js?v=142"></script>
+  <script src="js/app.js?v=142"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -333,7 +321,7 @@
 })();
 </script>
 <script>
-const APP_VER = '141';
+const APP_VER = '142';
 if ('serviceWorker' in navigator) {
   let reg = null;
 

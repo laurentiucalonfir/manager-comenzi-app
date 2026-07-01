@@ -1,11 +1,11 @@
-const CACHE = 'comenzi-wa-v141';
+const CACHE = 'comenzi-wa-v142';
 const ASSETS = [
   './manifest.json',
   './css/style.css',
   './js/data.js',
   './js/firebase-init.js',
-  './js/sync.js?v=141',
-  './js/app.js?v=141'
+  './js/sync.js?v=142',
+  './js/app.js?v=142'
 ];
 
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
@@ -54,10 +54,16 @@ self.addEventListener('install', e => {
 
 self.addEventListener('message', e => {
   if (e.data && e.data.action === 'skipWaiting') self.skipWaiting();
+  if (e.data && e.data.action === 'clearBadge') {
+    _badgeCount = 0;
+    try { navigator.setAppBadge(0); } catch(err) {}
+  }
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  _badgeCount = 0;
+  try { navigator.setAppBadge(0); } catch(err) {}
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
     for (var i = 0; i < clientList.length; i++) { if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus(); }
     if (clients.openWindow) return clients.openWindow('/');

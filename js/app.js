@@ -1,4 +1,3 @@
-let currentPin = '';
 let currentUser = null;
 let cart = {};
 let lastResults = [];
@@ -50,6 +49,12 @@ function loginWithEmail() {
   var password = document.getElementById('passwordInput').value.trim();
   if (!email || !password) { showToast('Introdu email și parolă!', true); return; }
   firebase.auth().signInWithEmailAndPassword(email, password).then(function(cred) {
+    if (!cred.user.emailVerified) {
+      cred.user.sendEmailVerification();
+      firebase.auth().signOut();
+      showToast('Verifică-ți emailul! Ți-am trimis un link de confirmare.', true);
+      return Promise.reject(new Error('Email neverificat'));
+    }
     return isAdminUid(cred.user.uid).then(function(isAdm) {
       if (!isAdm) {
         return registerAdminUid();
@@ -59,25 +64,24 @@ function loginWithEmail() {
       doLogin();
     });
   }).catch(function(e) {
-    showToast('Eroare autentificare: ' + e.message, true);
+    if (e.message !== 'Email neverificat') {
+      showToast('Eroare autentificare: ' + e.message, true);
+    }
   });
 }
 
 function toggleEmailLogin() {
   var section = document.getElementById('loginEmailSection');
-  var pinNumpad = document.querySelector('.numpad');
-  var pinHint = document.querySelector('.pin-hint');
+  var codeSection = document.getElementById('loginCodeSection');
   var toggleBtn = document.querySelector('.btn-email-toggle');
-  if (!section || !pinNumpad) return;
+  if (!section || !codeSection) return;
   if (section.style.display === 'none' || section.style.display === '') {
     section.style.display = 'block';
-    pinNumpad.style.display = 'none';
-    if (pinHint) pinHint.style.display = 'none';
-    if (toggleBtn) toggleBtn.textContent = '← Autentificare cu PIN';
+    codeSection.style.display = 'none';
+    if (toggleBtn) toggleBtn.textContent = 'Autentificare cu cod locație';
   } else {
     section.style.display = 'none';
-    pinNumpad.style.display = '';
-    if (pinHint) pinHint.style.display = '';
+    codeSection.style.display = 'block';
     if (toggleBtn) toggleBtn.textContent = 'Autentificare admin cu email';
   }
 }
@@ -107,6 +111,12 @@ function fbReadWithTimeout(path, timeoutMs = 10000) {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    try { if (navigator.clearAppBadge) navigator.clearAppBadge(); else if (navigator.setAppBadge) navigator.setAppBadge(0); } catch(e) {}
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ action: 'clearBadge' });
+    }
+  }
   if (document.visibilityState === 'visible' && currentUser && !currentUser.isAdmin) {
     if (firebaseReady) {
       firebase.database().goOnline();
@@ -257,38 +267,17 @@ function updateFBStatus() {
   } else {
     el.textContent = '✕';
     el.style.color = '#e94560';
-    el.title = 'Firebase neconectat';
   }
 }
 
-// ── LOGIN ──
-function pinPress(d) {
-  if (currentPin.length >= 6) return;
-  currentPin += d;
-  updatePinDisplay();
-  if (currentPin.length === 6) setTimeout(pinOk, 150);
-}
+// 🔒 LOGIN 🔒
+async function loginWithCode() {
+  const el = document.getElementById('pinInput');
+  const entered = el.value.trim();
+  if (!entered) return;
 
-function pinDel() {
-  currentPin = currentPin.slice(0, -1);
-  updatePinDisplay();
-}
-
-function updatePinDisplay() {
-  const el = document.getElementById('pinDisplay');
-  el.classList.remove('error', 'filled');
-  const dots = currentPin ? '●'.repeat(currentPin.length) + '·'.repeat(6 - currentPin.length) : '';
-  el.value = dots;
-  if (currentPin.length === 6) el.classList.add('filled');
-}
-
-async function pinOk() {
-  if (!currentPin) return;
   const pins = Sync.getPins();
   const grants = Sync.getGrants();
-  const entered = currentPin;
-  currentPin = '';
-  updatePinDisplay();
 
   var enteredHash = await hashPin(entered);
   var needsUpgrade = false;
@@ -344,7 +333,7 @@ async function pinOk() {
     }
   }
   if (match) {
-    if (tryLogin(match)) {
+    if (await tryLogin(match)) {
       if (needsUpgrade) try { await Sync.savePins(pins); } catch (e) {}
       return;
     }
@@ -353,34 +342,13 @@ async function pinOk() {
   // Fallback: search for matching code in grants
   if (grants) {
     for (const [loc, g] of Object.entries(grants)) {
-      if (g && g.code === entered && tryLogin(loc)) return;
+      if (g && g.code === entered && await tryLogin(loc)) return;
     }
   }
 
-  const el = document.getElementById('pinDisplay');
   el.classList.add('error');
-  el.value = '✕✕✕✕';
-  setTimeout(() => { el.classList.remove('error'); updatePinDisplay(); }, 800);
+  setTimeout(() => { el.classList.remove('error'); }, 800);
 }
-
-document.addEventListener('keydown', e => {
-  if (document.getElementById('loginScreen').style.display === 'none') return;
-  var emailSection = document.getElementById('loginEmailSection');
-  if (emailSection && emailSection.style.display !== 'none') return;
-  if (e.key >= '0' && e.key <= '9') { e.preventDefault(); pinPress(e.key); return; }
-  if (e.key === 'Backspace') { e.preventDefault(); pinDel(); return; }
-  if (e.key === 'Enter') { e.preventDefault(); pinOk(); return; }
-}, true);
-
-document.getElementById('pinDisplay').addEventListener('input', function() {
-  if (!/\d/.test(this.value)) return;
-  const digits = this.value.replace(/\D/g, '').slice(0, 6);
-  if (digits !== currentPin) {
-    currentPin = digits;
-    updatePinDisplay();
-  }
-  if (currentPin.length === 6) setTimeout(pinOk, 150);
-});
 
 function doLogin() {
   document.getElementById('loginScreen').style.display = 'none';
