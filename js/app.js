@@ -60,6 +60,8 @@ function loginWithEmail() {
         return registerAdminUid();
       }
     }).then(function() {
+      localStorage.setItem('admin_email', email);
+      localStorage.setItem('admin_pwd', password);
       currentUser = { location: '', isAdmin: true };
       doLogin();
     });
@@ -242,16 +244,27 @@ async function initApp() {
       cart = JSON.parse(sessionStorage.getItem('sess_cart') || localStorage.getItem('sess_cart') || '{}');
       doLogin();
       updateBadge();
-      if (currentUser.isAdmin) {
-        waitForAuth().then(function(u) {
-          if (!u || u.isAnonymous) {
-            doLogout(true);
-            showToast('Sesiunea a expirat. Te rugăm să te reloghezi.', true, 5000);
-          } else {
-            registerAdminUid();
-          }
-        });
-      }
+        if (currentUser.isAdmin) {
+          waitForAuth().then(function(u) {
+            if (!u || u.isAnonymous) {
+              const savedEmail = localStorage.getItem('admin_email');
+              const savedPwd = localStorage.getItem('admin_pwd');
+              if (savedEmail && savedPwd) {
+                firebase.auth().signInWithEmailAndPassword(savedEmail, savedPwd).then(function() {
+                  registerAdminUid();
+                }).catch(function() {
+                  doLogout(true);
+                  showToast('Sesiunea a expirat. Te rugăm să te reloghezi.', true, 5000);
+                });
+              } else {
+                doLogout(true);
+                showToast('Sesiunea a expirat. Te rugăm să te reloghezi.', true, 5000);
+              }
+            } else {
+              registerAdminUid();
+            }
+          });
+        }
       return;
     } catch (e) { currentUser = null; cart = {}; }
   }
@@ -454,6 +467,8 @@ function doLogout(force) {
   _lastCentralizatorOrderCount = -1;
   localStorage.removeItem('sess_user');
   localStorage.removeItem('sess_cart');
+  localStorage.removeItem('admin_email');
+  localStorage.removeItem('admin_pwd');
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminTab').style.display = 'none';
@@ -461,6 +476,7 @@ function doLogout(force) {
   document.getElementById('adminLocRow').classList.remove('visible');
   switchTab('order');
   updateBadge();
+  if (typeof firebase !== 'undefined' && firebase.auth) firebase.auth().signOut();
 }
 
 // ── DROPDOWNS ──
