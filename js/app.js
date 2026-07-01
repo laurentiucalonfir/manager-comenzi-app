@@ -885,21 +885,6 @@ async function adminSetPin(inp) {
   }
 }
 
-async function adminChangePin() {
-  const inp = document.getElementById('adminPinInput');
-  let val = inp.value.replace(/\D/g, '').slice(0, 6);
-  inp.value = val;
-  if (val.length !== 6) { showToast('PIN-ul trebuie să aibă 6 cifre!', true); return; }
-  const pins = Sync.getPins();
-  pins.ADMIN = await hashPin(val);
-  try {
-    await Sync.savePins(pins);
-    showToast(`PIN Admin schimbat!`);
-  } catch (e) {
-    showToast('Eroare: ' + e.message, true);
-  }
-}
-
 function adminUpdateEmailDisplay() {
   var el = document.getElementById('adminEmailDisplay');
   if (!el) return;

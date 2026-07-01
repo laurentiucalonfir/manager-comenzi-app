@@ -138,13 +138,6 @@
         <div id="adminGrantList"></div>
       </div>
       <div class="admin-section">
-        <h3>PIN Admin</h3>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input class="grant-pin" id="adminPinInput" type="text" maxlength="6" inputmode="numeric" placeholder="PIN nou" style="width:120px">
-          <button class="btn-grant-add" onclick="adminChangePin()">Schimbă</button>
-        </div>
-      </div>
-      <div class="admin-section">
         <h3 onclick="toggleCollapsible('adminSupplierListSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
           <span>Furnizori</span>
           <span id="adminSupplierListSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
@@ -309,8 +302,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=144"></script>
-  <script src="js/app.js?v=144"></script>
+<script src="js/sync.js?v=145"></script>
+  <script src="js/app.js?v=145"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -324,7 +317,7 @@
 })();
 </script>
 <script>
-const APP_VER = '144';
+const APP_VER = '145';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
