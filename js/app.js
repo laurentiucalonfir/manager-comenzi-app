@@ -112,14 +112,20 @@ function fbReadWithTimeout(path, timeoutMs = 10000) {
   ]);
 }
 function clearPwaBadge() {
-  try { if (navigator.clearAppBadge) navigator.clearAppBadge(); else if (navigator.setAppBadge) navigator.setAppBadge(0); } catch(e) {}
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(function(reg) {
-      if (reg && reg.active) {
-        reg.active.postMessage({ action: 'clearBadge' });
-      }
-    }).catch(function(){});
-  }
+  try {
+    if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function(){}); 
+    else if (navigator.setAppBadge) navigator.setAppBadge(0).catch(function(){});
+  } catch(e) {}
+  
+  try {
+    if (typeof navigator !== 'undefined' && navigator && 'serviceWorker' in navigator && navigator.serviceWorker) {
+      navigator.serviceWorker.ready.then(function(reg) {
+        if (reg && reg.active) {
+          reg.active.postMessage({ action: 'clearBadge' });
+        }
+      }).catch(function(){});
+    }
+  } catch(e) {}
 }
 
 document.addEventListener('visibilitychange', () => {
