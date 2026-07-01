@@ -282,20 +282,7 @@ async function loginWithCode() {
   var enteredHash = await hashPin(entered);
   var needsUpgrade = false;
 
-  // Admin login - check hash first, then plaintext (backward compat)
-  if (pins && pins.ADMIN) {
-    if (enteredHash === pins.ADMIN || entered === pins.ADMIN) {
-      if (entered === pins.ADMIN && enteredHash !== pins.ADMIN) {
-        pins.ADMIN = enteredHash;
-        needsUpgrade = true;
-      }
-      currentUser = { location: '', isAdmin: true };
-      waitForAuth().then(function() { registerAdminUid(); });
-      doLogin();
-      if (needsUpgrade) try { await Sync.savePins(pins); } catch (e) {}
-      return;
-    }
-  }
+// Removed ADMIN backward compat pin check to enforce email login.
 
   // Helper to attempt login for a location
   async function tryLogin(loc) {
