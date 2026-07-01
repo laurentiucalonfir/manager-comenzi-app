@@ -1056,6 +1056,19 @@ function adminEditProduct(supplier, produs) {
   if (!p) return;
   _editSupplier = supplier;
   _editOldName = produs;
+
+  const sel = document.getElementById('editProdSupplier');
+  if (sel) {
+    sel.innerHTML = '';
+    Object.keys(DB).sort().forEach(sup => {
+      const opt = document.createElement('option');
+      opt.value = sup;
+      opt.textContent = sup;
+      if (sup === supplier) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
   document.getElementById('editProdName').value = p.produs;
   document.getElementById('editProdTip').value = p.tip_ambalaj;
   document.getElementById('editProdAmbalaj').value = p.ambalaj;
@@ -1065,19 +1078,37 @@ function adminEditProduct(supplier, produs) {
 
 async function adminSaveEditProduct() {
   const DB = Sync.getDB();
-  const supplier = _editSupplier;
+  const oldSupplier = _editSupplier;
   const oldName = _editOldName;
   const name = document.getElementById('editProdName').value.trim();
   if (!name) { showToast('Introdu numele produsului!', true); return; }
   const tip = document.getElementById('editProdTip').value;
   const ambalaj = parseInt(document.getElementById('editProdAmbalaj').value) || 1;
   const afiseaza = document.getElementById('editProdAfiseaza').checked ? 'da' : 'nu';
-  const prods = DB[supplier].products || [];
-  const idx = prods.findIndex(p => p.produs === oldName);
-  if (idx === -1) return;
-  const dup = prods.findIndex(p => p.produs.toLowerCase() === name.toLowerCase() && p.produs !== oldName);
-  if (dup !== -1) { showToast('Produsul există deja!', true); return; }
-  prods[idx] = { produs: name, afiseaza, ambalaj, tip_ambalaj: tip };
+  
+  const newSupplierEl = document.getElementById('editProdSupplier');
+  const newSupplier = newSupplierEl ? newSupplierEl.value : oldSupplier;
+
+  if (newSupplier === oldSupplier) {
+    const prods = DB[oldSupplier].products || [];
+    const idx = prods.findIndex(p => p.produs === oldName);
+    if (idx === -1) return;
+    const dup = prods.findIndex(p => p.produs.toLowerCase() === name.toLowerCase() && p.produs !== oldName);
+    if (dup !== -1) { showToast('Produsul există deja!', true); return; }
+    prods[idx] = { produs: name, afiseaza, ambalaj, tip_ambalaj: tip };
+  } else {
+    if (!DB[newSupplier]) DB[newSupplier] = { products: [], locations: [] };
+    if (!DB[newSupplier].products) DB[newSupplier].products = [];
+    const dup = DB[newSupplier].products.findIndex(p => p.produs.toLowerCase() === name.toLowerCase());
+    if (dup !== -1) { showToast(`Produsul există deja la ${newSupplier}!`, true); return; }
+    
+    const oldProds = DB[oldSupplier].products || [];
+    const idx = oldProds.findIndex(p => p.produs === oldName);
+    if (idx !== -1) oldProds.splice(idx, 1);
+    
+    DB[newSupplier].products.push({ produs: name, afiseaza, ambalaj, tip_ambalaj: tip });
+  }
+
   try {
     const ok = await Sync.saveDB(DB);
     if (ok === false) { showToast('Firebase neconectat!', true); return; }
