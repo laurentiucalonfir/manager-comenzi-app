@@ -25,7 +25,10 @@
   <div id="loginEmailSection" style="display:none;margin-top:16px;width:100%">
     <div class="login-label">Autentificare Admin</div>
     <input class="search-input" id="emailInput" type="email" placeholder="Email" style="margin-bottom:8px;width:100%;box-sizing:border-box">
-    <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="margin-bottom:8px;width:100%;box-sizing:border-box" onkeydown="if(event.key === 'Enter') loginWithEmail()">
+    <div style="position:relative;width:100%;margin-bottom:8px;">
+      <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="width:100%;box-sizing:border-box;padding-right:40px;" onkeydown="if(event.key === 'Enter') loginWithEmail()">
+      <button type="button" onclick="const pwd = document.getElementById('passwordInput'); pwd.type = pwd.type === 'password' ? 'text' : 'password'; this.textContent = pwd.type === 'password' ? '👁️' : '🙈';" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0;color:#888;">👁️</button>
+    </div>
     <button class="btn-main" onclick="loginWithEmail()" style="width:100%;padding:13px">Autentificare</button>
     <button class="btn-secondary" onclick="toggleEmailLogin()" style="width:100%;margin-top:6px;padding:13px">← Înapoi la cod</button>
   </div>
@@ -306,8 +309,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=143"></script>
-  <script src="js/app.js?v=143"></script>
+<script src="js/sync.js?v=144"></script>
+  <script src="js/app.js?v=144"></script>
 <script>
 (function() {
   var el = document.getElementById('fbStatus');
@@ -321,7 +324,7 @@
 })();
 </script>
 <script>
-const APP_VER = '143';
+const APP_VER = '144';
 if ('serviceWorker' in navigator) {
   let reg = null;
 
