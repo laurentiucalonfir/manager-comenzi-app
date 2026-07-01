@@ -242,6 +242,16 @@ async function initApp() {
       cart = JSON.parse(sessionStorage.getItem('sess_cart') || localStorage.getItem('sess_cart') || '{}');
       doLogin();
       updateBadge();
+      if (currentUser.isAdmin) {
+        waitForAuth().then(function(u) {
+          if (!u || u.isAnonymous) {
+            doLogout(true);
+            showToast('Sesiunea a expirat. Te rugăm să te reloghezi.', true, 5000);
+          } else {
+            registerAdminUid();
+          }
+        });
+      }
       return;
     } catch (e) { currentUser = null; cart = {}; }
   }
