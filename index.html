@@ -1,350 +1,1190 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Comenzi Corina Caffe">
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="css/style.css">
-<title>Comenzi Corina Caffe</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Comenzi">
+  <meta name="theme-color" content="#2c3e50">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3014/3014948.png">
+
+  <title>Manager Comenzi</title>
+
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; color: #333; -webkit-user-select: none; }
+    h2 { text-align: center; color: #2c3e50; font-size: 20px; margin-bottom: 15px; font-weight: bold; }
+    #continut { max-width: 500px; margin: 0 auto; }
+
+    .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.06); margin-bottom: 12px; border-left: 5px solid #25D366; }
+    .card.trimis { border-left-color: #128C7E; background-color: #f0fdf4; }
+    .card.fara-produse { border-left-color: #94a3b8; background-color: #ffffff; opacity: 0.95; transition: all 0.2s ease; }
+    .card.fara-produse.verificat { border-left-color: #2ecc71; background-color: #f0fdf4; opacity: 0.8; }
+    
+    .card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .card-header:hover .furnizor-name { color: #25D366; }
+    .furnizor-name { font-size: 16px; font-weight: bold; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+    .chevron-indicator { font-size: 11px; color: #64748b; margin-left: 4px; }
+
+    .checkbox-verificare { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #475569; cursor: pointer; }
+    .checkbox-verificare input { width: 18px; height: 18px; accent-color: #2ecc71; cursor: pointer; }
+
+    pre { background: #f1f5f9; padding: 10px; border-radius: 6px; white-space: pre-wrap; font-size: 13px; border: 1px solid #cbd5e1; line-height: 1.4; margin: 10px 0 12px 0; color: #000; }
+    
+    .btn-action { width: 100%; color: white; padding: 12px 0; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; display: block; box-sizing: border-box; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .btn-action:active { transform: translateY(1px); }
+
+    .btn-whatsapp { background-color: #25D366; }
+    .btn-whatsapp:hover { background-color: #22bf5b; }
+    .btn-whatsapp:active { background-color: #128C7E; }
+    .btn-whatsapp.trimis { background-color: #128C7E !important; }
+
+    .panel-editare { display: none; margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+    .panel-editare.deschis { display: block; }
+
+    .sectiune-titlu { font-size: 14px; font-weight: bold; color: #64748b; margin: 25px 0 10px 0; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+    .incarcare-status { text-align: center; font-size: 14px; color: #7f8c8d; margin: 20px 0; font-weight: bold; }
+    #btn-reset-global { padding: 12px; font-size: 14px; background-color:#e74c3c; color:white; border:none; border-radius:8px; font-weight:bold; width:100%; margin-bottom:8px; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s ease; }
+    #btn-reset-global:active { transform: translateY(1px); }
+    
+    .btn-add-furnizor { padding: 10px; font-size: 13px; background-color:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; width:100%; margin-bottom:15px; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s ease; }
+    .btn-add-furnizor:hover { background-color: #2563eb; }
+
+    .btn-subtle { background: none; border: none; color: #2563eb; font-size: 12px; font-weight: bold; cursor: pointer; padding: 3px 0 0 0; margin-top: 1px; text-align: left; display: inline-block; text-decoration: underline; }
+    .btn-subtle:hover { color: #1d4ed8; }
+    .btn-subtle-danger { color: #ef4444 !important; }
+    .btn-subtle-danger:hover { color: #dc2626 !important; }
+
+    .btn-cfg { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 14px; font-size: 13px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    .btn-cfg:active { transform: translateY(1px); }
+    .btn-cfg-add { background-color: #2563eb; color: white; }
+    .btn-cfg-add:hover { background-color: #1d4ed8; }
+    .btn-cfg-edit { background-color: #f59e0b; color: white; }
+    .btn-cfg-edit:hover { background-color: #d97706; }
+    .btn-cfg-danger { background-color: #ef4444; color: white; }
+    .btn-cfg-danger:hover { background-color: #dc2626; }
+
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 3px; text-transform: uppercase; }
+    .form-control { width: 100%; padding: 9px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box; background: white; }
+    
+    .btn-salveaza { background-color: #2ecc71; color: white; margin-top: 10px; }
+    .btn-salveaza:hover { background-color: #27ae60; }
+    .btn-sterge { background-color: #e74c3c !important; }
+    .btn-sterge:hover { background-color: #c0392b !important; }
+
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+    .tab-btn { flex: 1; padding: 12px 0; border: none; background: #e2e8f0; color: #475569; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s ease; }
+    .tab-btn.activ { background: #2563eb; color: white; box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
+    .tab-continut { display: none; }
+    .tab-continut.activ { display: block; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 2000; justify-content: center; align-items: center; }
+    .modal-box { background: white; padding: 22px; border-radius: 14px; max-width: 360px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.15); animation: popIn 0.2s ease; }
+    @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-title { font-size: 16px; font-weight: bold; color: #1e293b; margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+    .modal-body { margin-bottom: 15px; text-align: left; }
+    .modal-body label { display: block; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+    .modal-body input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; margin-bottom: 10px; background: #f8fafc; }
+    .modal-body input:focus { border-color: #2563eb; background: white; outline: none; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .btn-modal { flex: 1; padding: 12px 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .btn-modal-save { background: #2563eb; color: white; }
+    .btn-modal-save:hover { background: #1d4ed8; }
+    .btn-modal-cancel { background: #94a3b8; color: white; }
+    .btn-modal-cancel:hover { background: #64748b; }
+    .btn-modal-danger { background: #ef4444; color: white; }
+    .btn-modal-danger:hover { background: #dc2626; }
+    
+    #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+    #login-box { background: white; padding: 30px; border-radius: 14px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    #login-box h3 { text-align: center; color: #1e293b; margin-top: 0; }
+    #login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+    #login-box button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+    #login-box button:hover { background: #1d4ed8; }
+    #login-error { color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 10px; display: none; }
+  </style>
+  
+  <!-- Firebase Compat Web SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
-<div class="login-screen" id="loginScreen" style="display:none">
-  <div class="login-logo">C<span>orina Caffe</span></div>
-  <div class="login-sub">Sistem comenzi furnizori</div>
-  <div class="login-label">Introdu PIN-ul</div>
-  <input class="pin-display" id="pinDisplay" type="text" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="······" maxlength="20">
-  <div class="pin-hint">PIN 6 cifre</div>
-  <div class="numpad">
-    <button class="numpad-btn" onclick="pinPress('1')">1</button>
-    <button class="numpad-btn" onclick="pinPress('2')">2</button>
-    <button class="numpad-btn" onclick="pinPress('3')">3</button>
-    <button class="numpad-btn" onclick="pinPress('4')">4</button>
-    <button class="numpad-btn" onclick="pinPress('5')">5</button>
-    <button class="numpad-btn" onclick="pinPress('6')">6</button>
-    <button class="numpad-btn" onclick="pinPress('7')">7</button>
-    <button class="numpad-btn" onclick="pinPress('8')">8</button>
-    <button class="numpad-btn" onclick="pinPress('9')">9</button>
-    <button class="numpad-btn del" onclick="pinDel()">⌫</button>
-    <button class="numpad-btn" onclick="pinPress('0')">0</button>
-    <button class="numpad-btn ok" onclick="pinOk()">OK</button>
-  </div>
-  <div id="loginEmailSection" style="display:none;margin-top:16px;width:100%">
-    <div class="login-label">Autentificare Admin</div>
-    <input class="search-input" id="emailInput" type="email" placeholder="Email" style="margin-bottom:8px;width:100%;box-sizing:border-box">
-    <input class="search-input" id="passwordInput" type="password" placeholder="Parolă" style="margin-bottom:8px;width:100%;box-sizing:border-box">
-    <button class="btn-main" onclick="loginWithEmail()" style="width:100%;padding:13px">Autentificare</button>
-    <button class="btn-secondary" onclick="toggleEmailLogin()" style="width:100%;margin-top:6px;padding:13px">← Înapoi la PIN</button>
-  </div>
-  <div style="text-align:center;margin-top:8px">
-    <button class="btn-email-toggle" onclick="toggleEmailLogin()" style="background:none;border:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;padding:4px 8px">Autentificare admin cu email</button>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app" style="display:none;flex:1;flex-direction:column">
-
-  <div class="header">
-    <div class="header-logo">C<span>orina Caffe</span></div>
-    <span class="header-loc" id="headerLoc"></span>
-    <span id="fbStatus" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;color:#888;border:1px solid #333;" title="Status Firebase">⚪</span>
-    <div class="header-right">
-      <button class="btn-icon" onclick="switchTab('cart')">🛒 <span class="cart-badge" id="cartBadge">0</span></button>
-      <button class="btn-icon btn-logout" id="headerLogoutBtn" onclick="doLogout()">⏏</button>
+  <!-- Ecran Login -->
+  <div id="login-screen">
+    <div id="login-box">
+      <h3>🔐 Autentificare</h3>
+      <div id="login-error">Email sau parolă incorectă!</div>
+      <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+      <input type="password" id="login-password" placeholder="Parola" autocomplete="current-password">
+      <button onclick="efectueazaLogin()">Loghează-te</button>
     </div>
   </div>
 
-  <div class="tabs" id="tabs">
-    <div class="tab active" onclick="switchTab('order')" data-tab="order">📋 Comandă</div>
-    <div class="tab" onclick="switchTab('cart')" data-tab="cart">🛒 Coș</div>
-    <div class="tab" onclick="switchTab('results')" data-tab="results">📤 Mesaje</div>
-    <div class="tab" onclick="switchTab('history')" data-tab="history">📜 Istoric</div>
-    <div class="tab" id="centralizatorTab" onclick="switchTab('centralizator')" data-tab="centralizator" style="display:none">📊 Centralizator<span class="tab-badge" id="centralizatorBadge" style="display:none">!</span></div>
-    <div class="tab" id="adminTab" onclick="switchTab('admin')" data-tab="admin" style="display:none">⚙️ Admin</div>
+  <h2 id="titlu-pagina" style="display:none;">📦 Se încarcă...</h2>
+  
+  <div id="continut" style="display:none;">
+    <div id="status-live" class="incarcare-status">Se generează datele... ⏳</div>
+
+    <div class="nav-tabs">
+      <button id="tab-btn-comenzi" class="tab-btn activ" onclick="comutaTab('comenzi')">📦 Comenzi</button>
+      <button id="tab-btn-config" class="tab-btn" onclick="comutaTab('config')">⚙️ Configurare</button>
+    </div>
+
+    <!-- TAB 1: COMENZI -->
+    <div id="tab-comenzi" class="tab-continut activ">
+      <button id="btn-reset-global" onclick="deschideModalConfirmare()">🧹 Resetează Toate Tabelele (0)</button>
+      <div id="zona-carduri-comenzi"></div>
+    </div>
+
+    <!-- TAB 2: CONFIGURARE -->
+    <div id="tab-config" class="tab-continut">
+      <button onclick="efectueazaLogout()" style="width:100%; padding:10px; margin-bottom:15px; background:#94a3b8; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🚪 Deconectare (Logout)</button>
+      <button id="btn-adaug-furnizor" class="btn-add-furnizor" onclick="deschideModalFurnizor(-1)">➕ Adaugă Furnizor Nou</button>
+      <div id="zona-carduri-config"></div>
+    </div>
   </div>
 
-  <!-- ORDER -->
-  <div class="view active" id="view-order">
-    <div class="order-controls">
-      <div class="row2">
-        <div class="select-wrap">
-          <select id="supplierSelect" onchange="renderProducts()">
-            <option value="">— Toți furnizorii —</option>
+  <!-- Modal Confirmare Resetare Generală -->
+  <div id="modal-confirmare" class="modal-overlay">
+    <div class="modal-box">
+      <p style="margin:0; font-weight:bold; color:#1e293b;">Sigur doriți să ștergeți toate cantitățile?</p>
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-danger" onclick="reseteazaMecanic()">Da</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModal('modal-confirmare')">Nu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Custom Furnizor -->
+  <div id="modal-furnizor" class="modal-overlay">
+    <div class="modal-box">
+      <div id="modal-furnizor-titlu" class="modal-title">➕ Adaugă Furnizor</div>
+      <div class="modal-body">
+        <label>Nume Furnizor</label>
+        <input type="text" id="m-furnizor-nume" placeholder="ex: Cola, Avitop">
+        <label>Telefon (Opțional, cu 40...)</label>
+        <input type="text" id="m-furnizor-telefon" placeholder="ex: 40712345678">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-save" onclick="salveazaModalFurnizor()">💾 Salvează</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModal('modal-furnizor')">Anulează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Custom Gestiune -->
+  <div id="modal-gestiune" class="modal-overlay">
+    <div class="modal-box">
+      <div id="modal-gestiune-titlu" class="modal-title">➕ Adaugă Gestiune</div>
+      <div class="modal-body">
+        <label>Nume Gestiune / Locație</label>
+        <input type="text" id="m-gestiune-nume" placeholder="ex: Bistro nr. 137, Pietonal">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-save" onclick="salveazaModalGestiune()">💾 Salvează</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModal('modal-gestiune')">Anulează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Custom Produs -->
+  <div id="modal-produs" class="modal-overlay">
+    <div class="modal-box">
+      <div id="modal-produs-titlu" class="modal-title">➕ Adaugă Produs</div>
+      <div class="modal-body">
+        <label>Nume Produs</label>
+        <input type="text" id="m-produs-nume" placeholder="ex: Cola 0.5L, Fanta">
+        <label>Tip Ambalaj</label>
+        <input type="text" id="m-produs-tip" placeholder="ex: buc. sau bax" value="buc.">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-save" onclick="salveazaModalProdus()">💾 Salvează</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModal('modal-produs')">Anulează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal General Confirmare Ștergere -->
+  <div id="modal-stergere" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title" style="color:#ef4444;">⚠️ Confirmare Ștergere</div>
+      <div class="modal-body" id="modal-stergere-mesaj" style="text-align:center; font-weight:bold; color:#334155;">
+        Sigur doriți să ștergeți?
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-danger" id="btn-confirm-stergere">🗑️ Da, Șterge</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModal('modal-stergere')">Anulează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editare Comandă -->
+  <div id="modal-editare-comanda" class="modal-overlay">
+    <div class="modal-box">
+      <div id="modal-editare-titlu" class="modal-title">📦 Adaugă Cantități</div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Locație / Gestiune</label>
+          <select id="modal-sel-gestiune" class="form-control" onchange="schimbaGestiuneModal()"></select>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>Produs</label>
+          <select id="modal-sel-produs" class="form-control" onchange="schimbaProdusModal()"></select>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>Cantitate (0 = Ștergere)</label>
+          <select id="modal-inp-cantitate" class="form-control" onchange="actualizeazaStilButonModal()">
           </select>
         </div>
-        <div class="select-wrap admin-loc-row" id="adminLocRow">
-          <select id="locationSelect" onchange="renderProducts()">
-            <option value="">— Toate locațiile —</option>
-          </select>
-        </div>
       </div>
-      <div class="row2">
-        <div class="search-wrap">
-          <input class="search-input" id="searchInput" placeholder="🔍 Caută produs..." oninput="renderProducts()">
-          <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">&times;</button>
-        </div>
-        <div class="toggle-row">
-          <label class="toggle"><input type="checkbox" id="showAllToggle" onchange="renderProducts()"><span class="toggle-slider"></span></label>
-          <span>Toate</span>
-        </div>
+      <div class="modal-actions">
+        <button id="modal-btn-salveaza" class="btn-modal btn-modal-save" onclick="trimiteCantitateModal()">💾 Salvează</button>
+        <button class="btn-modal btn-modal-cancel" onclick="inchideModalEditare()">Închide</button>
       </div>
-    </div>
-    <div class="product-list" id="productList"></div>
-    <div class="bottom-bar">
-      <button class="btn-secondary" onclick="resetCart()">🗑</button>
-      <button class="btn-main" onclick="switchTab('cart')">Coș (<span id="cartCount">0</span>)</button>
     </div>
   </div>
 
-  <!-- CART -->
-  <div class="view" id="view-cart">
-    <div class="cart-list" id="cartList"></div>
-    <div class="bottom-bar">
-      <button class="btn-secondary" onclick="switchTab('order')">← Înapoi</button>
-      <button class="btn-main" id="trimiteBtn" onclick="trimiteComanda()" disabled>📤 Trimite comanda</button>
-    </div>
-  </div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2bQiS9TqSj0n_g7Mlhbb0ZtsjyqEN4y0",
+      authDomain: "manager-comenzi-ff85b.firebaseapp.com",
+      databaseURL: "https://manager-comenzi-ff85b-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "manager-comenzi-ff85b",
+      storageBucket: "manager-comenzi-ff85b.firebasestorage.app",
+      messagingSenderId: "138540595383",
+      appId: "1:138540595383:web:ec32d82d79139f814d3532",
+      measurementId: "G-5ZEE1Q7BGK"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
 
-  <!-- RESULTS -->
-  <div class="view" id="view-results">
-    <div class="results-list" id="resultsList">
-      <div class="empty"><div class="empty-icon">💬</div><div>Mesajele apar aici după trimitere</div></div>
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-main" onclick="switchTab('cart')">← Coș</button>
-    </div>
-  </div>
+    let dateGlobal = [];
+    let furnizoriVerificati = JSON.parse(localStorage.getItem("furnizoriVerificati") || "{}");
+    let furnizoriTrimisi = JSON.parse(localStorage.getItem("furnizoriTrimisi") || "{}");
+    let editareCurentaGlobalIndex = -1;
+    let gestiuniSelectate = {};
+    let produseSelectate = {};
 
-  <!-- HISTORY -->
-  <div class="view" id="view-history">
-    <div class="history-list" id="historyList">
-      <div class="empty"><div class="empty-icon">📜</div><div>Nicio comandă în istoric</div></div>
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-main" onclick="switchTab('order')">← Înapoi</button>
-    </div>
-  </div>
-  <!-- CENTRALIZATOR -->
-  <div class="view" id="view-centralizator">
-    <div class="centralizator-list" id="centralizatorList"></div>
-    <div class="bottom-bar">
-      <button class="btn-secondary" onclick="switchTab('order')">← Înapoi</button>
-      <button class="btn-secondary" onclick="centralizatorReset()">🗑 Resetează</button>
-      <button class="btn-main" id="centralizatorTrimiteBtn" onclick="centralizatorTrimite()">📋 Copiază toate comenzile</button>
-    </div>
-  </div>
-
-  <!-- ADMIN -->
-  <div class="view" id="view-admin">
-    <div class="admin-panel">
-      <div class="admin-section">
-        <h3>Acces locații</h3>
-        <div id="adminGrantList"></div>
-      </div>
-      <div class="admin-section">
-        <h3>PIN Admin</h3>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input class="grant-pin" id="adminPinInput" type="text" maxlength="6" inputmode="numeric" placeholder="PIN nou" style="width:120px">
-          <button class="btn-grant-add" onclick="adminChangePin()">Schimbă</button>
-        </div>
-      </div>
-      <div class="admin-section">
-        <h3 onclick="toggleCollapsible('adminSupplierListSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
-          <span>Furnizori</span>
-          <span id="adminSupplierListSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
-        </h3>
-        <div id="adminSupplierListSection" style="display:none;margin-top:10px">
-          <div id="adminSupplierList"></div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px">Adaugă furnizor nou</div>
-            <div style="display:flex;gap:8px">
-              <input class="search-input" id="newSupplierName" placeholder="Nume furnizor" style="flex:1">
-              <button class="btn-grant-add" onclick="adminAddSupplier()">+ Adaugă</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="admin-section">
-        <h3 onclick="toggleCollapsible('adminProductSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
-          <span>Produse</span>
-          <span id="adminProductSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
-        </h3>
-        <div id="adminProductSection" style="display:none;margin-top:10px">
-          <div class="row2" style="margin-bottom:8px">
-            <div class="select-wrap">
-              <select id="adminProdSupplier" onchange="adminRenderProducts()"></select>
-            </div>
-          </div>
-          <div id="adminProductList"></div>
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px">Adaugă produs nou</div>
-            <input class="search-input" id="newProdName" placeholder="Nume produs" style="margin-bottom:6px">
-            <div class="row2" style="margin-bottom:6px">
-              <div class="select-wrap" style="flex:1">
-                <select id="newProdTip">
-                  <option value="buc">buc</option>
-                  <option value="kg">kg</option>
-                  <option value="bax">bax</option>
-                  <option value="set">set</option>
-                  <option value="l">l</option>
-                  <option value="plv">plv</option>
-                </select>
-              </div>
-              <input class="search-input" id="newProdAmbalaj" placeholder="Ambalaj" value="1" style="width:70px;text-align:center">
-            </div>
-            <label class="toggle-row" style="margin-bottom:10px">
-              <label class="toggle"><input type="checkbox" id="newProdAfiseaza" checked><span class="toggle-slider"></span></label>
-              <span>Vizibil în listă</span>
-            </label>
-            <button class="btn-save-pins" onclick="adminAddProduct()">+ Adaugă produs</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Edit product modal -->
-      <div id="editProdModal" class="modal-overlay" style="display:none" onclick="closeEditModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-          <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:12px">Editează produs</div>
-          <input class="search-input" id="editProdName" placeholder="Nume produs" style="margin-bottom:6px">
-          <div class="row2" style="margin-bottom:6px">
-            <div class="select-wrap" style="flex:1">
-              <select id="editProdTip">
-                <option value="buc">buc</option>
-                <option value="kg">kg</option>
-                <option value="bax">bax</option>
-                <option value="set">set</option>
-                <option value="l">l</option>
-                <option value="plv">plv</option>
-              </select>
-            </div>
-            <input class="search-input" id="editProdAmbalaj" placeholder="Ambalaj" style="width:70px;text-align:center">
-          </div>
-          <label class="toggle-row" style="margin-bottom:12px">
-            <label class="toggle"><input type="checkbox" id="editProdAfiseaza" checked><span class="toggle-slider"></span></label>
-            <span>Vizibil în listă</span>
-          </label>
-          <div class="row2" style="gap:8px">
-            <button class="btn-save-pins" onclick="adminSaveEditProduct()" style="flex:1">Salvează</button>
-            <button class="btn-logout" onclick="closeEditModal()" style="flex:1;text-align:center">Anulează</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <h3 onclick="toggleCollapsible('adminPhoneSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
-          <span>Contact furnizori</span>
-          <span id="adminPhoneSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
-        </h3>
-        <div id="adminPhoneSection" style="display:none;margin-top:10px">
-          <div class="row2" style="margin-bottom:8px">
-            <div class="select-wrap">
-              <select id="adminPhoneSupplier" onchange="adminRenderSupplierContact()"></select>
-            </div>
-          </div>
-          <div id="adminPhoneList"></div>
-          <div class="row2" style="margin-top:8px">
-            <button class="btn-save-pins" onclick="adminSaveSupplierContact()" style="flex:1">💾 Salvează contact</button>
-          </div>
-        </div>
-      </div>
-      <div class="admin-section">
-        <h3 onclick="toggleCollapsible('adminLocationSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
-          <span>Gestiuni</span>
-          <span id="adminLocationSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
-        </h3>
-        <div id="adminLocationSection" style="display:none;margin-top:10px">
-          <div class="row2" style="margin-bottom:8px">
-            <div class="select-wrap">
-              <select id="adminLocSupplier" onchange="adminRenderLocations()"></select>
-            </div>
-          </div>
-          <div id="adminLocationList"></div>
-          <div class="row2" style="margin-top:8px">
-            <div class="select-wrap" style="flex:1">
-              <select id="addLocSelect"><option value="">— Selectează gestiune —</option></select>
-            </div>
-            <button class="btn-save-pins" onclick="adminAddLocationSelected()" style="white-space:nowrap">+ Adaugă</button>
-          </div>
-        </div>
-      </div>
-      <div class="admin-section">
-        <h3>Notificări push</h3>
-        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">Permite primirea notificărilor push pe acest telefon. Apasă butonul de mai jos și confirmă permisiunea când apare dialogul sistemului.</div>
-        <button class="btn-save-pins" onclick="solicitaPermisiuneNotificari()" style="width:100%;padding:13px;background:var(--green);color:#0a2a28">🔔 Activează notificări pe acest telefon</button>
-      </div>
-      <div class="admin-section">
-        <h3 onclick="toggleCollapsible('adminAccountSection')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none">
-          <span>Cont curent</span>
-          <span id="adminAccountSectionArrow" style="font-size:0.75rem;color:var(--text-muted)">▶</span>
-        </h3>
-        <div id="adminAccountSection" style="display:none;margin-top:10px">
-          <div id="adminEmailDisplay" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px"></div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-            <input class="search-input" id="changeEmailInput" type="email" placeholder="Email nou" style="flex:1;min-width:140px;box-sizing:border-box">
-            <button class="btn-grant-add" onclick="adminChangeEmail()">Schimbă email</button>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-            <input class="search-input" id="changePassInput" type="password" placeholder="Parolă nouă" style="flex:1;min-width:140px;box-sizing:border-box">
-            <button class="btn-grant-add" onclick="adminChangePassword()">Schimbă parola</button>
-          </div>
-          <button class="btn-logout" onclick="doLogout()" style="width:100%;padding:13px">⏏ Deconectare</button>
-        </div>
-      </div>
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-main" onclick="switchTab('order')">← Înapoi la comenzi</button>
-    </div>
-  </div>
-
-</div>
-
-<!-- LOADING -->
-<div class="loading-overlay" id="loadingOverlay" style="display:none">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loadingText">Se trimite...</div>
-  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="js/data.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
-<script src="js/firebase-init.js"></script>
-<script src="js/sync.js?v=152"></script>
-  <script src="js/app.js?v=152"></script>
-<script>
-(function() {
-  var el = document.getElementById('fbStatus');
-  if (el) {
-    if (typeof firebaseReady !== 'undefined' && firebaseReady) {
-      el.textContent = '●'; el.style.color = '#2dd4bf'; el.title = 'Firebase conectat';
-    } else {
-      el.textContent = '✕'; el.style.color = '#e94560'; el.title = 'Firebase neconectat';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
     }
-  }
-})();
-</script>
-<script>
-const APP_VER = '152';
-if ('serviceWorker' in navigator) {
-  let reg = null;
 
-  navigator.serviceWorker.register('sw.js', {
-    updateViaCache: 'none'
-  }).then(r => {
-    reg = r;
-  }).catch(() => {});
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('titlu-pagina').style.display = 'block';
+        document.getElementById('continut').style.display = 'block';
+        incarcaComenzi();
+      } else {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('titlu-pagina').style.display = 'none';
+        document.getElementById('continut').style.display = 'none';
+      }
+    });
 
-  setInterval(function() { if (reg) reg.update(); }, 3600000);
-}
-</script>
+    function efectueazaLogin() {
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      const errDiv = document.getElementById('login-error');
+      
+      auth.signInWithEmailAndPassword(email, pass).then(() => {
+        errDiv.style.display = 'none';
+      }).catch(error => {
+        errDiv.innerText = "Eroare: " + error.message;
+        errDiv.style.display = 'block';
+      });
+    }
+
+    function efectueazaLogout() {
+      auth.signOut();
+    }
+
+    function incarcaComenzi() {
+      db.ref('comenzi').on('value', (snapshot) => {
+        const raspuns = snapshot.val();
+        if (!raspuns) {
+          dateGlobal = [];
+        } else if (Array.isArray(raspuns)) {
+          dateGlobal = raspuns.filter(x => x !== null);
+        } else if (typeof raspuns === 'object') {
+          dateGlobal = Object.values(raspuns).filter(x => x !== null);
+        } else {
+          dateGlobal = [];
+        }
+        
+        document.getElementById("titlu-pagina").innerText = "Manager Comenzi";
+        document.getElementById("status-live").style.display = "none";
+        
+        afiseazaToateCardurile(dateGlobal);
+      }, (error) => {
+        const statusDiv = document.getElementById("status-live");
+        statusDiv.style.display = "block";
+        statusDiv.style.color = "#e74c3c";
+        statusDiv.innerHTML = "❌ Eroare la conectarea cu Firebase: " + error.message;
+      });
+    }
+
+    function comutaTab(numeTab) {
+      document.getElementById("tab-btn-comenzi").classList.toggle("activ", numeTab === "comenzi");
+      document.getElementById("tab-btn-config").classList.toggle("activ", numeTab === "config");
+      document.getElementById("tab-comenzi").classList.toggle("activ", numeTab === "comenzi");
+      document.getElementById("tab-config").classList.toggle("activ", numeTab === "config");
+    }
+
+    function afiseazaToateCardurile(listeComenzi) {
+      const zonaComenzi = document.getElementById("zona-carduri-comenzi");
+      const zonaConfig = document.getElementById("zona-carduri-config");
+      
+      if (zonaComenzi) zonaComenzi.innerHTML = "";
+      if (zonaConfig) zonaConfig.innerHTML = "";
+
+      const cuProduse = [];
+      const faraProduse = [];
+
+      listeComenzi.forEach((item, originalIndex) => {
+        const elementObj = { data: item, globalIndex: originalIndex };
+        if (item.areProduse) {
+          cuProduse.push(elementObj);
+        } else {
+          faraProduse.push(elementObj);
+        }
+      });
+
+      // TAB 1: COMENZI
+      if (zonaComenzi) {
+        if (cuProduse.length > 0) {
+          const titluComenzi = document.createElement("div");
+          titluComenzi.className = "sectiune-titlu";
+          titluComenzi.innerText = "📦 De Comandat (" + cuProduse.length + ")";
+          zonaComenzi.appendChild(titluComenzi);
+          cuProduse.forEach(itemObj => zonaComenzi.appendChild(creeazaCardFurnizorComenzi(itemObj.data, itemObj.globalIndex)));
+        }
+
+        if (faraProduse.length > 0) {
+          const titluFara = document.createElement("div");
+          titluFara.className = "sectiune-titlu";
+          titluFara.innerText = "✅ Stoc pe zero (" + faraProduse.length + ")";
+          zonaComenzi.appendChild(titluFara);
+          faraProduse.forEach(itemObj => zonaComenzi.appendChild(creeazaCardFurnizorComenzi(itemObj.data, itemObj.globalIndex)));
+        }
+      }
+
+      // TAB 2: CONFIGURARE
+      if (zonaConfig) {
+        listeComenzi.forEach((item, idx) => {
+          zonaConfig.appendChild(creeazaCardConfigurare(item, idx));
+        });
+      }
+
+      // Populează dropdown-urile pentru tab-ul de configurare
+      listeComenzi.forEach((item, idx) => {
+        populeazaDropdownuriConfig(idx);
+      });
+    }
+
+    let deschisePanouriConfig = {};
+
+    function comutaPanouConfig(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+      
+      const esteDeschis = deschisePanouriConfig[dateFurnizor.furnizor] ? true : false;
+      deschisePanouriConfig[dateFurnizor.furnizor] = !esteDeschis;
+      
+      const p = document.getElementById("panel-cfg-" + globalIndex);
+      const ch = document.getElementById("chevron-cfg-" + globalIndex);
+      
+      if (p) {
+        if (!esteDeschis) {
+          p.classList.add("deschis");
+          if (ch) ch.innerText = "▲";
+        } else {
+          p.classList.remove("deschis");
+          if (ch) ch.innerText = "▼";
+        }
+      }
+    }
+
+    function creeazaCardFurnizorComenzi(date, globalIndex) {
+      const card = document.createElement("div");
+      const textEnc = encodeURIComponent(date.mesaj);
+
+      let headerHTML = "";
+      let corpHTML = "";
+
+      if (date.areProduse) {
+        let esteTrimis = furnizoriTrimisi[date.furnizor] ? true : false;
+        card.className = "card" + (esteTrimis ? " trimis" : "");
+        card.id = "card-" + globalIndex;
+
+        let linkWhatsapp = date.telefon ? ("https://wa.me/" + date.telefon + "?text=" + textEnc) : ("https://wa.me/?text=" + textEnc);
+        let infoTel = date.telefon ? " (" + date.telefon + ")" : "";
+        let textButon = esteTrimis ? "Trimis ✅" : "💬 Trimite pe WhatsApp";
+        let clasaExtraBtn = esteTrimis ? " trimis" : "";
+
+        headerHTML = 
+          '<div class="card-header" onclick="deschideModalEditareComanda(' + globalIndex + ')">' +
+            '<div class="furnizor-name">👤 ' + escapeHtml(date.furnizor) + '<small style="font-weight:normal; color:#64748b;">' + infoTel + '</small></div>' +
+            '<div style="font-size: 13px; color: #2563eb; font-weight: bold;">✏️ Adaugă</div>' +
+          '</div>';
+        
+        corpHTML = 
+          '<pre>' + escapeHtml(date.mesaj) + '</pre>' +
+          '<a class="btn-action btn-whatsapp' + clasaExtraBtn + '" id="btn-wa-' + globalIndex + '" href="' + linkWhatsapp + '" target="_blank" onclick="marcheazaTrimis(\'' + escapeHtml(date.furnizor) + '\', ' + globalIndex + ')">' + textButon + '</a>';
+      } else {
+        let esteBifat = furnizoriVerificati[date.furnizor] ? true : false;
+        card.className = "card fara-produse" + (esteBifat ? " verificat" : "");
+        card.id = "card-" + globalIndex;
+
+        headerHTML = 
+          '<div class="card-header" onclick="deschideModalEditareComanda(' + globalIndex + ')">' +
+            '<div class="furnizor-name" style="color: #64748b;">👤 ' + escapeHtml(date.furnizor) + ' <small>(0 produse)</small></div>' +
+            '<label class="checkbox-verificare" onclick="event.stopPropagation()">' +
+              '<input type="checkbox" ' + (esteBifat ? 'checked' : '') + ' onchange="bifeazaVerificare(this, \'' + escapeHtml(date.furnizor) + '\', ' + globalIndex + ')">' +
+              'Verificat' +
+            '</label>' +
+          '</div>';
+      }
+
+      card.innerHTML = headerHTML + corpHTML;
+      return card;
+    }
+
+    function creeazaCardConfigurare(date, globalIndex) {
+      const card = document.createElement("div");
+      const esteDeschis = deschisePanouriConfig[date.furnizor] ? true : false;
+      const chevronIcon = esteDeschis ? "▲" : "▼";
+      card.className = "card";
+      card.style.borderLeftColor = "#3b82f6";
+
+      let infoTel = date.telefon ? (" (" + escapeHtml(date.telefon) + ")") : "";
+
+      let headerHTML = 
+        '<div class="card-header" onclick="comutaPanouConfig(' + globalIndex + ')">' +
+          '<div class="furnizor-name">👤 ' + escapeHtml(date.furnizor) + '<small style="font-weight:normal; color:#64748b;">' + infoTel + '</small> <span class="chevron-indicator" id="chevron-cfg-' + globalIndex + '">' + chevronIcon + '</span></div>' +
+        '</div>';
+
+      let bodyHTML = 
+        '<div id="panel-cfg-' + globalIndex + '" class="panel-editare' + (esteDeschis ? ' deschis' : '') + '">' +
+          '<div class="form-group">' +
+            '<label>⚙️ Gestiuni / Locații</label>' +
+            '<select id="cfg-gestiune-' + globalIndex + '" class="form-control"></select>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' +
+              '<button type="button" class="btn-cfg btn-cfg-add" onclick="deschideModalGestiune(' + globalIndex + ', false)">➕ Adaugă</button>' +
+              '<button type="button" class="btn-cfg btn-cfg-edit" onclick="deschideModalGestiune(' + globalIndex + ', true)">✏️ Modifică</button>' +
+              '<button type="button" class="btn-cfg btn-cfg-danger" onclick="stergeGestiuneConfig(' + globalIndex + ')">🗑️ Șterge</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="form-group" style="margin-top:14px;">' +
+            '<label>📦 Produse Formular</label>' +
+            '<select id="cfg-produs-' + globalIndex + '" class="form-control"></select>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' +
+              '<button type="button" class="btn-cfg btn-cfg-add" onclick="deschideModalProdus(' + globalIndex + ', false)">➕ Adaugă</button>' +
+              '<button type="button" class="btn-cfg btn-cfg-edit" onclick="deschideModalProdus(' + globalIndex + ', true)">✏️ Modifică</button>' +
+              '<button type="button" class="btn-cfg btn-cfg-danger" onclick="stergeProdusConfig(' + globalIndex + ')">🗑️ Șterge</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex; justify-content:space-between; gap:8px; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:12px;">' +
+            '<button type="button" class="btn-cfg btn-cfg-edit" style="flex:1;" onclick="deschideModalFurnizor(' + globalIndex + ')">✏️ Editează Furnizor</button>' +
+            '<button type="button" class="btn-cfg btn-cfg-danger" style="flex:1;" onclick="stergeFurnizorComplet(' + globalIndex + ')">🗑️ Șterge Furnizor</button>' +
+          '</div>' +
+        '</div>';
+
+      card.innerHTML = headerHTML + bodyHTML;
+      return card;
+    }
+
+    function generareOptiuniCantitateHTML() {
+      return '<option value="0">0 (🗑️ Șterge / Anulează)</option>' +
+        '<option value="1" selected>1</option>' +
+        '<option value="2">2</option>' +
+        '<option value="3">3</option>' +
+        '<option value="4">4</option>' +
+        '<option value="5">5</option>' +
+        '<option value="6">6</option>' +
+        '<option value="7">7</option>' +
+        '<option value="8">8</option>' +
+        '<option value="9">9</option>' +
+        '<option value="10">10</option>' +
+        '<option value="11">11</option>' +
+        '<option value="12">12</option>' +
+        '<option value="13">13</option>' +
+        '<option value="14">14</option>' +
+        '<option value="15">15</option>' +
+        '<option value="20">20</option>' +
+        '<option value="25">25</option>' +
+        '<option value="30">30</option>' +
+        '<option value="35">35</option>' +
+        '<option value="40">40</option>';
+    }
+
+    function deschideModalEditareComanda(globalIndex) {
+      const date = dateGlobal[globalIndex];
+      if (!date) return;
+      editareCurentaGlobalIndex = globalIndex;
+      
+      document.getElementById('modal-editare-titlu').innerText = "📦 " + date.furnizor;
+      document.getElementById('modal-inp-cantitate').innerHTML = generareOptiuniCantitateHTML();
+      
+      const overlay = document.getElementById("modal-editare-comanda");
+      overlay.style.display = "flex";
+      
+      populeazaDropdownuriModal();
+    }
+
+    function inchideModalEditare() {
+      document.getElementById("modal-editare-comanda").style.display = "none";
+      editareCurentaGlobalIndex = -1;
+    }
+
+    function schimbaGestiuneModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selGestiune = document.getElementById("modal-sel-gestiune");
+      if (dateFurnizor && selGestiune) {
+        gestiuniSelectate[dateFurnizor.furnizor] = Number(selGestiune.value);
+      }
+      actualizeazaProduseModal();
+    }
+
+    function schimbaProdusModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selProdus = document.getElementById("modal-sel-produs");
+      if (dateFurnizor && selProdus) {
+        produseSelectate[dateFurnizor.furnizor] = Number(selProdus.value);
+      }
+      schimbaOptiuneCantitateModal();
+    }
+
+    function populeazaDropdownuriModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selGestiune = document.getElementById("modal-sel-gestiune");
+      if (!selGestiune || !dateFurnizor) return;
+
+      selGestiune.innerHTML = "";
+      dateFurnizor.gestiuni.forEach(g => {
+        let opt = document.createElement("option");
+        opt.value = Number(g.colIndex);
+        opt.innerText = g.nume;
+        selGestiune.appendChild(opt);
+      });
+
+      if (gestiuniSelectate[dateFurnizor.furnizor]) {
+        selGestiune.value = String(gestiuniSelectate[dateFurnizor.furnizor]);
+      }
+
+      actualizeazaProduseModal();
+    }
+
+    function obtineCantitateGestiune(pObj, colIndex) {
+      if (!pObj || !pObj.valoriGestiuni) return 0;
+      let colNum = Number(colIndex);
+      if (colNum === 0) colNum = 5;
+      return Number(pObj.valoriGestiuni[colNum]) || 0;
+    }
+
+    function seteazaCantitateGestiune(pObj, colIndex, cantitate) {
+      if (!pObj) return;
+      if (!pObj.valoriGestiuni) pObj.valoriGestiuni = {};
+      let colNum = Number(colIndex);
+      if (colNum === 0) colNum = 5;
+      let val = Number(cantitate);
+
+      if (val > 0) {
+        pObj.valoriGestiuni[colNum] = val;
+      } else {
+        delete pObj.valoriGestiuni[colNum];
+      }
+    }
+
+    function actualizeazaProduseModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selGestiune = document.getElementById("modal-sel-gestiune");
+      const selProdus = document.getElementById("modal-sel-produs");
+      if (!selGestiune || !selProdus || !dateFurnizor) return;
+
+      const colGestiuneSelectata = Number(selGestiune.value);
+      gestiuniSelectate[dateFurnizor.furnizor] = colGestiuneSelectata;
+
+      let salvareValoare = produseSelectate[dateFurnizor.furnizor] || selProdus.value;
+      selProdus.innerHTML = "";
+
+      dateFurnizor.produseFormular.forEach(p => {
+        let cantitateExistenta = obtineCantitateGestiune(p, colGestiuneSelectata);
+        let opt = document.createElement("option");
+        opt.value = Number(p.randIndex);
+        
+        if (cantitateExistenta > 0) {
+          opt.innerText = "✅ " + p.produs + " (" + cantitateExistenta + " " + p.tipAmbalaj + ")";
+        } else {
+          opt.innerText = p.produs + " (" + p.tipAmbalaj + ")";
+        }
+        
+        selProdus.appendChild(opt);
+      });
+
+      if (salvareValoare) {
+        selProdus.value = String(salvareValoare);
+      }
+      schimbaOptiuneCantitateModal();
+    }
+
+    function schimbaOptiuneCantitateModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selGestiune = document.getElementById("modal-sel-gestiune");
+      const selProdus = document.getElementById("modal-sel-produs");
+      const selCantitate = document.getElementById("modal-inp-cantitate");
+      if (!selGestiune || !selProdus || !selCantitate || !dateFurnizor) return;
+
+      const colGestiuneSelectata = Number(selGestiune.value);
+      const randProdus = Number(selProdus.value);
+
+      let pObj = dateFurnizor.produseFormular.find(p => Number(p.randIndex) === Number(randProdus));
+      if (pObj) {
+        let cantitateExistenta = obtineCantitateGestiune(pObj, colGestiuneSelectata);
+        if (cantitateExistenta > 0) {
+          selCantitate.value = String(cantitateExistenta);
+        } else {
+          selCantitate.value = "1";
+        }
+      }
+
+      actualizeazaStilButonModal();
+    }
+
+    function actualizeazaStilButonModal() {
+      const selCantitate = document.getElementById("modal-inp-cantitate");
+      const btnMain = document.getElementById("modal-btn-salveaza");
+      if (!selCantitate || !btnMain) return;
+
+      const cantVal = Number(selCantitate.value);
+      if (cantVal === 0) {
+        btnMain.innerText = "🗑️ Șterge";
+        btnMain.classList.add("btn-sterge");
+      } else {
+        btnMain.innerText = "💾 Salvează";
+        btnMain.classList.remove("btn-sterge");
+      }
+    }
+
+    function marcheazaTrimis(numeFurnizor, index) {
+      furnizoriTrimisi[numeFurnizor] = true;
+      try { localStorage.setItem("furnizoriTrimisi", JSON.stringify(furnizoriTrimisi)); } catch(e) {}
+      const card = document.getElementById("card-" + index);
+      const btn = document.getElementById("btn-wa-" + index);
+      
+      if (card) card.classList.add("trimis");
+      if (btn) {
+        btn.innerText = "Trimis ✅";
+        btn.classList.add("trimis");
+      }
+    }
+
+    function bifeazaVerificare(checkbox, numeFurnizor, index) {
+      furnizoriVerificati[numeFurnizor] = checkbox.checked;
+      try { localStorage.setItem("furnizoriVerificati", JSON.stringify(furnizoriVerificati)); } catch(e) {}
+      const card = document.getElementById("card-" + index);
+      if (checkbox.checked) {
+        card.classList.add("verificat");
+      } else {
+        card.classList.remove("verificat");
+      }
+    }
+
+    function recalculeazaMesajFurnizor(dateFurnizor) {
+      let structura = {};
+      let areProduse = false;
+
+      dateFurnizor.produseFormular.forEach(p => {
+        for (let colKey in p.valoriGestiuni) {
+          let colIndexNum = Number(colKey);
+          let val = Number(p.valoriGestiuni[colKey]) || 0;
+          
+          if (val > 0) {
+            let cantitateFinala = val;
+            if (cantitateFinala > 0) {
+              let linieProdus = `✅ *${p.produs}* -> ${cantitateFinala} ${p.tipAmbalaj}`;
+              
+              let gObj = dateFurnizor.gestiuni.find(g => Number(g.colIndex) === colIndexNum);
+              
+              let numeGestiune = "SIMPLU";
+              if (gObj && gObj.nume) {
+                let textNume = String(gObj.nume).trim();
+                if (textNume !== "" && textNume !== "-- Fără Gestiune --") {
+                  numeGestiune = textNume;
+                }
+              }
+              
+              if (!structura[numeGestiune]) structura[numeGestiune] = [];
+              
+              if (!structura[numeGestiune].includes(linieProdus)) {
+                structura[numeGestiune].push(linieProdus);
+                areProduse = true;
+              }
+            }
+          }
+        }
+      });
+
+      let textMesaj = "";
+      if (areProduse) {
+        textMesaj = `Bună ziua! Doresc să plasez o comandă pentru următoarele produse:\n`;
+        for (let grup in structura) {
+          if (structura[grup].length > 0) {
+            if (grup === "SIMPLU") {
+              textMesaj += `\n` + structura[grup].join("\n") + `\n`;
+            } else {
+              textMesaj += `\n📍 *PENTRU ${grup.toUpperCase()}:*\n`;
+              textMesaj += structura[grup].join("\n") + `\n`;
+            }
+          }
+        }
+        textMesaj = textMesaj.replace(/\n\n+/g, '\n\n').trim() + `\n\nMulțumesc!`;
+      }
+
+      dateFurnizor.areProduse = areProduse;
+      dateFurnizor.mesaj = textMesaj;
+      
+      afiseazaToateCardurile(dateGlobal);
+    }
+
+    function trimiteCantitateModal() {
+      const globalIndex = editareCurentaGlobalIndex;
+      if (globalIndex === -1) return;
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+
+      const selGestiune = document.getElementById("modal-sel-gestiune");
+      const selProdus = document.getElementById("modal-sel-produs");
+      const selCantitate = document.getElementById("modal-inp-cantitate");
+
+      const numeFurnizor = dateFurnizor.furnizor;
+      const randIndex = Number(selProdus ? selProdus.value : 0);
+      const coloanaIndex = Number(selGestiune ? selGestiune.value : 0);
+      const cantitate = Number(selCantitate ? selCantitate.value : 0);
+
+      if(!randIndex) {
+        alert("Alegeți un produs valid!");
+        return;
+      }
+
+      let pObj = dateFurnizor.produseFormular.find(p => Number(p.randIndex) === randIndex);
+      if (pObj) {
+        seteazaCantitateGestiune(pObj, coloanaIndex, cantitate);
+      }
+
+      // Menținem locația/produsul selectat pe acest furnizor după salvare
+      gestiuniSelectate[numeFurnizor] = coloanaIndex;
+      produseSelectate[numeFurnizor] = randIndex;
+
+      recalculeazaMesajFurnizor(dateFurnizor);
+      
+      // Update the modal UI immediately to reflect the change visually
+      populeazaDropdownuriModal();
+
+      const statusDiv = document.getElementById("status-live");
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#166534";
+      statusDiv.innerText = "⚡ Salvat în Firebase!";
+
+      setTimeout(() => { statusDiv.style.display = "none"; }, 1200);
+
+      firebase.database().ref('comenzi/' + globalIndex).set(dateFurnizor).catch(err => {
+        statusDiv.style.display = "block";
+        statusDiv.style.color = "#e74c3c";
+        statusDiv.innerText = "❌ Eroare la sincronizare cu Firebase!";
+        setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
+      });
+    }
+
+    function adaugaGestiuneNoua(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+      const numeGestiune = prompt("Introduceți numele noii gestiuni / locații pentru " + dateFurnizor.furnizor + ":");
+      if (!numeGestiune || !numeGestiune.trim()) return;
+
+      if (!dateFurnizor.gestiuni) dateFurnizor.gestiuni = [];
+      const maxCol = dateFurnizor.gestiuni.reduce((max, g) => Math.max(max, Number(g.colIndex) || 0), 4);
+      const colIndexNou = maxCol + 1;
+
+      const gNoua = { nume: numeGestiune.trim(), colIndex: colIndexNou };
+      dateFurnizor.gestiuni.push(gNoua);
+      gestiuniSelectate[dateFurnizor.furnizor] = colIndexNou;
+
+      recalculeazaMesajFurnizor(dateFurnizor);
+      salveazaFurnizorInFirebase(globalIndex);
+      afiseazaToateCardurile(dateGlobal);
+    }
+
+    function populeazaDropdownuriConfig(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selG = document.getElementById("cfg-gestiune-" + globalIndex);
+      const selP = document.getElementById("cfg-produs-" + globalIndex);
+      if (!dateFurnizor) return;
+
+      if (selG) {
+        selG.innerHTML = "";
+        if (dateFurnizor.gestiuni && dateFurnizor.gestiuni.length > 0) {
+          dateFurnizor.gestiuni.forEach(g => {
+            const opt = document.createElement("option");
+            opt.value = g.colIndex;
+            opt.textContent = g.nume;
+            selG.appendChild(opt);
+          });
+        } else {
+          selG.innerHTML = '<option value="0">-- Fără Gestiuni --</option>';
+        }
+      }
+
+      if (selP) {
+        selP.innerHTML = "";
+        if (dateFurnizor.produseFormular && dateFurnizor.produseFormular.length > 0) {
+          dateFurnizor.produseFormular.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.randIndex;
+            opt.textContent = p.produs + " (" + p.tipAmbalaj + ")";
+            selP.appendChild(opt);
+          });
+        } else {
+          selP.innerHTML = '<option value="0">-- Fără Produse --</option>';
+        }
+      }
+    }
+
+    let currentEditIndex = -1;
+    let currentSubIndex = -1;
+    let currentModalMode = "adaugare";
+    let callbackStergere = null;
+
+    function inchideModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.style.display = "none";
+    }
+
+    function deschideModalFurnizor(globalIndex = -1) {
+      currentEditIndex = globalIndex;
+      currentModalMode = (globalIndex >= 0) ? "editare" : "adaugare";
+      
+      document.getElementById("modal-furnizor-titlu").innerText = (currentModalMode === "editare") ? "✏️ Editează Furnizor" : "➕ Adaugă Furnizor Nou";
+      
+      if (currentModalMode === "editare" && dateGlobal[globalIndex]) {
+        document.getElementById("m-furnizor-nume").value = dateGlobal[globalIndex].furnizor || "";
+        document.getElementById("m-furnizor-telefon").value = dateGlobal[globalIndex].telefon || "";
+      } else {
+        document.getElementById("m-furnizor-nume").value = "";
+        document.getElementById("m-furnizor-telefon").value = "";
+      }
+      
+      document.getElementById("modal-furnizor").style.display = "flex";
+    }
+
+    function salveazaModalFurnizor() {
+      const nume = document.getElementById("m-furnizor-nume").value.trim();
+      const tel = document.getElementById("m-furnizor-telefon").value.trim();
+      if (!nume) { return; }
+
+      if (currentModalMode === "adaugare") {
+        const fNou = {
+          furnizor: nume,
+          telefon: tel,
+          areProduse: false,
+          mesaj: "",
+          gestiuni: [{ nume: "-- Fără Gestiune --", colIndex: 5 }],
+          produseFormular: []
+        };
+        dateGlobal.push(fNou);
+        salveazaFurnizorInFirebase(dateGlobal.length - 1);
+      } else if (currentModalMode === "editare" && dateGlobal[currentEditIndex]) {
+        dateGlobal[currentEditIndex].furnizor = nume;
+        dateGlobal[currentEditIndex].telefon = tel;
+        salveazaFurnizorInFirebase(currentEditIndex);
+      }
+
+      inchideModal("modal-furnizor");
+      afiseazaToateCardurile(dateGlobal);
+    }
+
+    function deschideModalGestiune(globalIndex, isEdit = false) {
+      currentEditIndex = globalIndex;
+      currentModalMode = isEdit ? "editare" : "adaugare";
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+
+      document.getElementById("modal-gestiune-titlu").innerText = isEdit ? ("✏️ Editează Gestiune (" + dateFurnizor.furnizor + ")") : ("➕ Adaugă Gestiune (" + dateFurnizor.furnizor + ")");
+
+      if (isEdit) {
+        const selG = document.getElementById("cfg-gestiune-" + globalIndex) || document.getElementById("sel-gestiune-" + globalIndex);
+        const colIndex = Number(selG ? selG.value : 0);
+        let gObj = dateFurnizor.gestiuni ? dateFurnizor.gestiuni.find(g => Number(g.colIndex) === colIndex) : null;
+        if (!gObj) { return; }
+        currentSubIndex = colIndex;
+        document.getElementById("m-gestiune-nume").value = gObj.nume || "";
+      } else {
+        document.getElementById("m-gestiune-nume").value = "";
+      }
+
+      document.getElementById("modal-gestiune").style.display = "flex";
+    }
+
+    function salveazaModalGestiune() {
+      const dateFurnizor = dateGlobal[currentEditIndex];
+      if (!dateFurnizor) return;
+      const nume = document.getElementById("m-gestiune-nume").value.trim();
+      if (!nume) { return; }
+
+      if (!dateFurnizor.gestiuni) dateFurnizor.gestiuni = [];
+
+      if (currentModalMode === "adaugare") {
+        const maxCol = dateFurnizor.gestiuni.reduce((max, g) => Math.max(max, Number(g.colIndex) || 0), 4);
+        const colIndexNou = maxCol + 1;
+        dateFurnizor.gestiuni.push({ nume: nume, colIndex: colIndexNou });
+        gestiuniSelectate[dateFurnizor.furnizor] = colIndexNou;
+      } else if (currentModalMode === "editare") {
+        let gObj = dateFurnizor.gestiuni.find(g => Number(g.colIndex) === currentSubIndex);
+        if (gObj) gObj.nume = nume;
+      }
+
+      recalculeazaMesajFurnizor(dateFurnizor);
+      salveazaFurnizorInFirebase(currentEditIndex);
+      inchideModal("modal-gestiune");
+      afiseazaToateCardurile(dateGlobal);
+    }
+
+    function deschideModalProdus(globalIndex, isEdit = false) {
+      currentEditIndex = globalIndex;
+      currentModalMode = isEdit ? "editare" : "adaugare";
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+
+      document.getElementById("modal-produs-titlu").innerText = isEdit ? ("✏️ Editează Produs (" + dateFurnizor.furnizor + ")") : ("➕ Adaugă Produs (" + dateFurnizor.furnizor + ")");
+
+      if (isEdit) {
+        const selP = document.getElementById("cfg-produs-" + globalIndex) || document.getElementById("sel-produs-" + globalIndex);
+        const randIndex = Number(selP ? selP.value : 0);
+        let pObj = dateFurnizor.produseFormular ? dateFurnizor.produseFormular.find(p => Number(p.randIndex) === randIndex) : null;
+        if (!pObj) { return; }
+        currentSubIndex = randIndex;
+        document.getElementById("m-produs-nume").value = pObj.produs || "";
+        document.getElementById("m-produs-tip").value = pObj.tipAmbalaj || "buc.";
+      } else {
+        document.getElementById("m-produs-nume").value = "";
+        document.getElementById("m-produs-tip").value = "buc.";
+      }
+
+      document.getElementById("modal-produs").style.display = "flex";
+    }
+
+    function salveazaModalProdus() {
+      const dateFurnizor = dateGlobal[currentEditIndex];
+      if (!dateFurnizor) return;
+      const nume = document.getElementById("m-produs-nume").value.trim();
+      const tip = document.getElementById("m-produs-tip").value.trim() || "buc.";
+      if (!nume) { return; }
+
+      if (!dateFurnizor.produseFormular) dateFurnizor.produseFormular = [];
+
+      if (currentModalMode === "adaugare") {
+        const maxRand = dateFurnizor.produseFormular.reduce((max, p) => Math.max(max, Number(p.randIndex) || 0), 1);
+        const randIndexNou = maxRand + 1;
+        const pNou = {
+          randIndex: randIndexNou,
+          produs: nume,
+          ambalaj: 1,
+          tipAmbalaj: tip,
+          valoriGestiuni: {}
+        };
+        dateFurnizor.produseFormular.push(pNou);
+        produseSelectate[dateFurnizor.furnizor] = randIndexNou;
+      } else if (currentModalMode === "editare") {
+        let pObj = dateFurnizor.produseFormular.find(p => Number(p.randIndex) === currentSubIndex);
+        if (pObj) {
+          pObj.produs = nume;
+          pObj.tipAmbalaj = tip;
+          pObj.ambalaj = 1;
+        }
+      }
+
+      recalculeazaMesajFurnizor(dateFurnizor);
+      salveazaFurnizorInFirebase(currentEditIndex);
+      inchideModal("modal-produs");
+      afiseazaToateCardurile(dateGlobal);
+    }
+
+    function deschideModalStergere(mesajText, callbackAction) {
+      document.getElementById("modal-stergere-mesaj").innerText = mesajText;
+      callbackStergere = callbackAction;
+      document.getElementById("btn-confirm-stergere").onclick = function() {
+        if (callbackStergere) callbackStergere();
+        inchideModal("modal-stergere");
+      };
+      document.getElementById("modal-stergere").style.display = "flex";
+    }
+
+    function stergeGestiuneConfig(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selG = document.getElementById("cfg-gestiune-" + globalIndex);
+      if (!dateFurnizor || !selG) return;
+      const colIndex = Number(selG.value);
+      let gObj = dateFurnizor.gestiuni ? dateFurnizor.gestiuni.find(g => Number(g.colIndex) === colIndex) : null;
+      if (!gObj) return;
+
+      deschideModalStergere('Sigur doriți să ștergeți gestiunea "' + gObj.nume + '"?', function() {
+        dateFurnizor.gestiuni = dateFurnizor.gestiuni.filter(g => Number(g.colIndex) !== colIndex);
+        if (dateFurnizor.produseFormular) {
+          dateFurnizor.produseFormular.forEach(p => {
+            if (p.valoriGestiuni && p.valoriGestiuni[colIndex] !== undefined) delete p.valoriGestiuni[colIndex];
+          });
+        }
+        recalculeazaMesajFurnizor(dateFurnizor);
+        salveazaFurnizorInFirebase(globalIndex);
+        afiseazaToateCardurile(dateGlobal);
+      });
+    }
+
+    function stergeProdusConfig(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selP = document.getElementById("cfg-produs-" + globalIndex);
+      if (!dateFurnizor || !selP) return;
+      const randIndex = Number(selP.value);
+      let pObj = dateFurnizor.produseFormular ? dateFurnizor.produseFormular.find(p => Number(p.randIndex) === randIndex) : null;
+      if (!pObj) return;
+
+      deschideModalStergere('Sigur doriți să ștergeți produsul "' + pObj.produs + '"?', function() {
+        dateFurnizor.produseFormular = dateFurnizor.produseFormular.filter(p => Number(p.randIndex) !== randIndex);
+        recalculeazaMesajFurnizor(dateFurnizor);
+        salveazaFurnizorInFirebase(globalIndex);
+        afiseazaToateCardurile(dateGlobal);
+      });
+    }
+
+    function stergeGestiuneCard(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selG = document.getElementById("sel-gestiune-" + globalIndex);
+      if (!dateFurnizor || !selG) return;
+      const colIndex = Number(selG.value);
+      let gObj = dateFurnizor.gestiuni ? dateFurnizor.gestiuni.find(g => Number(g.colIndex) === colIndex) : null;
+      if (!gObj) return;
+
+      deschideModalStergere('Sigur doriți să ștergeți gestiunea "' + gObj.nume + '"?', function() {
+        dateFurnizor.gestiuni = dateFurnizor.gestiuni.filter(g => Number(g.colIndex) !== colIndex);
+        if (dateFurnizor.produseFormular) {
+          dateFurnizor.produseFormular.forEach(p => {
+            if (p.valoriGestiuni && p.valoriGestiuni[colIndex] !== undefined) delete p.valoriGestiuni[colIndex];
+          });
+        }
+        delete gestiuniSelectate[dateFurnizor.furnizor];
+        recalculeazaMesajFurnizor(dateFurnizor);
+        salveazaFurnizorInFirebase(globalIndex);
+        afiseazaToateCardurile(dateGlobal);
+      });
+    }
+
+    function stergeProdusCard(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      const selP = document.getElementById("sel-produs-" + globalIndex);
+      if (!dateFurnizor || !selP) return;
+      const randIndex = Number(selP.value);
+      let pObj = dateFurnizor.produseFormular ? dateFurnizor.produseFormular.find(p => Number(p.randIndex) === randIndex) : null;
+      if (!pObj) return;
+
+      deschideModalStergere('Sigur doriți să ștergeți produsul "' + pObj.produs + '"?', function() {
+        dateFurnizor.produseFormular = dateFurnizor.produseFormular.filter(p => Number(p.randIndex) !== randIndex);
+        delete produseSelectate[dateFurnizor.furnizor];
+        recalculeazaMesajFurnizor(dateFurnizor);
+        salveazaFurnizorInFirebase(globalIndex);
+        afiseazaToateCardurile(dateGlobal);
+      });
+    }
+
+    function stergeFurnizorComplet(globalIndex) {
+      const dateFurnizor = dateGlobal[globalIndex];
+      if (!dateFurnizor) return;
+
+      deschideModalStergere('⚠️ ATENȚIE: Sigur doriți să ștergeți complet furnizorul "' + dateFurnizor.furnizor + '" și toate produsele lui?', function() {
+        dateGlobal.splice(globalIndex, 1);
+        afiseazaToateCardurile(dateGlobal);
+
+        const statusDiv = document.getElementById("status-live");
+        statusDiv.style.display = "block";
+        statusDiv.style.color = "#166534";
+        statusDiv.innerText = "⚡ Furnizor șters!";
+        setTimeout(() => { statusDiv.style.display = "none"; }, 1200);
+
+        firebase.database().ref('comenzi').set(dateGlobal);
+      });
+    }
+
+    function salveazaFurnizorInFirebase(globalIndex) {
+      const statusDiv = document.getElementById("status-live");
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#166534";
+      statusDiv.innerText = "⚡ Salvat în Firebase!";
+      setTimeout(() => { statusDiv.style.display = "none"; }, 1200);
+
+      firebase.database().ref('comenzi/' + globalIndex).set(dateGlobal[globalIndex]);
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function deschideModalConfirmare() { document.getElementById("modal-confirmare").style.display = "flex"; }
+    function inchideModalConfirmare() { document.getElementById("modal-confirmare").style.display = "none"; }
+
+    function reseteazaMecanic() {
+      inchideModalConfirmare();
+      const statusDiv = document.getElementById("status-live");
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#166534";
+      statusDiv.innerText = "⚡ Toate cantitățile au fost resetate în Firebase!";
+
+      furnizoriVerificati = {};
+      furnizoriTrimisi = {};
+      deschisePanouriEditare = {};
+      gestiuniSelectate = {};
+      produseSelectate = {};
+      try {
+        localStorage.removeItem("furnizoriVerificati");
+        localStorage.removeItem("furnizoriTrimisi");
+      } catch(e) {}
+
+      dateGlobal.forEach(furnizor => {
+        furnizor.areProduse = false;
+        furnizor.mesaj = "";
+        furnizor.produseFormular.forEach(p => {
+          p.valoriGestiuni = {};
+        });
+      });
+
+      afiseazaToateCardurile(dateGlobal);
+
+      setTimeout(() => { statusDiv.style.display = "none"; }, 1500);
+
+      firebase.database().ref('comenzi').set(dateGlobal).catch(err => {
+        statusDiv.style.display = "block";
+        statusDiv.style.color = "#e74c3c";
+        statusDiv.innerText = "❌ Eroare la resetare în Firebase!";
+        setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
+      });
+    }
+  </script>
 </body>
 </html>
